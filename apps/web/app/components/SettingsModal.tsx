@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useChatContext } from '../contexts/ChatContext';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { useToastContext } from '../contexts/ToastContext';
 import ApiKeyModal from './ApiKeyModal';
 import styles from './SettingsModal.module.css';
 
@@ -16,6 +17,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { data: session } = useSession();
   const { theme, toggleTheme } = useChatContext();
   const { profile, loading, error, updateProfile } = useUserProfile();
+  const { success, error: showError, info } = useToastContext();
   
   // Estados locais para edição
   const [isEditingName, setIsEditingName] = useState(false);
@@ -80,11 +82,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         // Redirecionar para Stripe Checkout
         window.location.href = data.checkoutUrl;
       } else {
-        alert('Erro ao processar upgrade: ' + (data.error || 'Erro desconhecido'));
+        showError('Erro ao processar upgrade: ' + (data.error || 'Erro desconhecido'));
       }
     } catch (error) {
       console.error('Error upgrading plan:', error);
-      alert('Erro ao processar upgrade. Tente novamente.');
+      showError('Erro ao processar upgrade. Tente novamente.');
     } finally {
       setIsProcessing(false);
     }
@@ -118,15 +120,15 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         if (shouldUpgrade) {
           // Aqui você pode redirecionar para página de upgrade ou abrir modal
           console.log('User wants to upgrade to PRO');
-          alert('Funcionalidade de upgrade será implementada. Redirecionando para página de planos...');
+          info('Funcionalidade de upgrade será implementada. Redirecionando para página de planos...');
           // window.location.href = '/pricing'; // quando tiver página de preços
         }
       } else {
-        alert('Erro ao acessar portal de cobrança: ' + (data.error || 'Erro desconhecido'));
+        showError('Erro ao acessar portal de cobrança: ' + (data.error || 'Erro desconhecido'));
       }
     } catch (error) {
       console.error('Error accessing billing portal:', error);
-      alert('Erro ao acessar portal de cobrança. Tente novamente.');
+      showError('Erro ao acessar portal de cobrança. Tente novamente.');
     } finally {
       setIsProcessing(false);
     }
@@ -157,16 +159,16 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       const data = await response.json();
       
       if (data.success) {
-        alert('Assinatura cancelada com sucesso. Você manterá acesso até ' + 
+        success('Assinatura cancelada com sucesso. Você manterá acesso até ' + 
               new Date(data.cancellation.accessUntil).toLocaleDateString('pt-BR'));
         // Recarregar perfil para mostrar status atualizado
-        window.location.reload();
+        setTimeout(() => window.location.reload(), 1500);
       } else {
-        alert('Erro ao cancelar assinatura: ' + (data.error || 'Erro desconhecido'));
+        showError('Erro ao cancelar assinatura: ' + (data.error || 'Erro desconhecido'));
       }
     } catch (error) {
       console.error('Error cancelling subscription:', error);
-      alert('Erro ao cancelar assinatura. Tente novamente.');
+      showError('Erro ao cancelar assinatura. Tente novamente.');
     } finally {
       setIsProcessing(false);
     }
@@ -192,14 +194,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       } else {
         // Tratar diferentes tipos de erro
         if (data.action === 'upgrade_required') {
-          alert(`${data.error}\n\nFaça upgrade para ${data.availablePlans?.join(' ou ')} para acessar o portal de cobrança.`);
+          showError(`${data.error}\n\nFaça upgrade para ${data.availablePlans?.join(' ou ')} para acessar o portal de cobrança.`);
         } else {
-          alert('Erro ao acessar portal de cobrança: ' + (data.error || 'Erro desconhecido'));
+          showError('Erro ao acessar portal de cobrança: ' + (data.error || 'Erro desconhecido'));
         }
       }
     } catch (error) {
       console.error('Error accessing billing portal:', error);
-      alert('Erro ao acessar portal de cobrança. Tente novamente.');
+      showError('Erro ao acessar portal de cobrança. Tente novamente.');
     } finally {
       setIsProcessing(false);
     }
@@ -660,7 +662,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       className={styles.apiButton}
                       onClick={() => {
                         navigator.clipboard.writeText(`cha_${profile.organization.apiKey}`);
-                        alert('Chave copiada para a área de transferência!');
+                        success('Chave copiada para a área de transferência!', 3000);
                       }}
                       disabled={isProcessing}
                     >
