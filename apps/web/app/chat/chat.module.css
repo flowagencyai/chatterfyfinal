@@ -1,0 +1,12 @@
+.chatLayout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .chatLayout {
+    flex-direction: column;
+  }
+}

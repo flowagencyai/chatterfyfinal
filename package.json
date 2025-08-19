@@ -1,0 +1,11 @@
+{
+  "name": "chat-saas-boilerplate",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "dependencies": {
+    "playwright": "^1.54.2"
+  }
+}

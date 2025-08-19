@@ -1,0 +1,133 @@
+.modelSelector {
+  position: relative;
+  z-index: 50;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.trigger:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-medium);
+}
+
+.modelName {
+  min-width: 120px;
+  text-align: left;
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+  color: var(--text-secondary);
+}
+
+.chevron.open {
+  transform: rotate(180deg);
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 40;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  min-width: 300px;
+  z-index: 50;
+}
+
+.header {
+  padding: 16px 16px 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modelList {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.modelItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-align: left;
+}
+
+.modelItem:hover {
+  background: var(--bg-secondary);
+}
+
+.modelItem.selected {
+  background: var(--bg-accent-light);
+  color: var(--accent-primary);
+}
+
+.modelInfo {
+  flex: 1;
+}
+
+.modelTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.modelItem.selected .modelTitle {
+  color: var(--accent-primary);
+}
+
+.modelDescription {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.modelItem.selected .modelDescription {
+  color: var(--accent-secondary);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .dropdown {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+}

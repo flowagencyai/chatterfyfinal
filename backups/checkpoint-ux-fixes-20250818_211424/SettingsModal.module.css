@@ -1,0 +1,521 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.settingItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.settingItem:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.settingInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.settingLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.settingDescription {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.settingValue {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.themeSelector {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.themeOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.themeOption:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.themeOption.selected {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.select {
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.actionButton:hover {
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+/* New Plan & Billing Styles */
+.planBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--accent-primary);
+  color: white;
+  border-radius: 25px;
+  font-size: 15px;
+  font-weight: 700;
+  width: fit-content;
+  margin: 6px 0;
+  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);
+  letter-spacing: 0.5px;
+}
+
+.upgradeButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--text-secondary);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-md);
+}
+
+.upgradeButton:hover {
+  transform: translateY(-1px);
+  background: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.usageStats {
+  display: flex;
+  gap: 24px;
+  margin: 8px 0;
+}
+
+.usageStat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.usageNumber {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  line-height: 1;
+}
+
+.usageLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.accountSince {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+.usageDescription {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+.billingHistory {
+  margin-top: 8px;
+}
+
+.manageButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.manageButton:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: rgba(16, 163, 127, 0.05);
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.editButton:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.securityButton,
+.apiButton,
+.exportButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.securityButton:hover,
+.apiButton:hover,
+.exportButton:hover {
+  border-color: var(--accent-primary);
+  background: rgba(16, 163, 127, 0.05);
+}
+
+.privacyControls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.toggleOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.toggleOption input[type="checkbox"] {
+  display: none;
+}
+
+.toggleSlider {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--border-primary);
+  border-radius: 12px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.toggleSlider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.toggleOption input[type="checkbox"]:checked + .toggleSlider {
+  background: var(--accent-primary);
+}
+
+.toggleOption input[type="checkbox"]:checked + .toggleSlider::before {
+  transform: translateX(20px);
+}
+
+.dangerButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border: 2px solid var(--accent-danger);
+  border-radius: 8px;
+  color: var(--accent-danger);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.dangerButton:hover {
+  background: var(--accent-danger);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-primary);
+  background: var(--bg-tertiary);
+}
+
+.cancelButton {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cancelButton:hover {
+  background: var(--bg-primary);
+  border-color: var(--accent-primary);
+}
+
+.saveButton {
+  padding: 8px 16px;
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.saveButton:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .overlay {
+    padding: 10px;
+  }
+  
+  .modal {
+    max-height: 95vh;
+  }
+  
+  .header {
+    padding: 20px 16px 12px;
+  }
+  
+  .content {
+    padding: 16px;
+  }
+  
+  .settingItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .themeSelector {
+    width: 100%;
+  }
+  
+  .themeOption {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .select {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .actionButton {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .footer {
+    padding: 12px 16px;
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  
+  .cancelButton,
+  .saveButton {
+    width: 100%;
+    justify-content: center;
+  }
+}

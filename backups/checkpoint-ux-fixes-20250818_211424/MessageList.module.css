@@ -1,0 +1,238 @@
+.messageList {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.messagesContainer {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.welcomeMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 60px 20px;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.welcomeIcon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border-radius: 50%;
+  color: var(--accent-primary);
+  margin-bottom: 24px;
+}
+
+.welcomeMessage h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.welcomeMessage p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 32px 0;
+}
+
+.suggestions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.suggestion {
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.suggestion:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-secondary);
+}
+
+.messageWrapper {
+  margin-bottom: 32px;
+  animation: slideInUp 0.4s ease-out;
+}
+
+.messageWrapper:last-child {
+  margin-bottom: 16px;
+}
+
+.messageContent {
+  display: flex;
+  gap: 16px;
+}
+
+.avatar {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.userAvatar,
+.assistantAvatar {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.userAvatar {
+  background: var(--accent-primary);
+  color: white;
+  text-transform: uppercase;
+}
+
+.assistantAvatar {
+  background: var(--bg-tertiary);
+  color: var(--accent-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.messageBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.messageHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.authorName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.timestamp {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.attachment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.messageText {
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.messageText p {
+  margin: 0 0 8px 0;
+}
+
+.messageText p:last-child {
+  margin-bottom: 0;
+}
+
+.userMessage .messageText {
+  background: var(--bg-message-user);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border-top-left-radius: 4px;
+}
+
+.assistantMessage .messageText {
+  background: var(--bg-message-assistant);
+}
+
+.systemMessage {
+  opacity: 0.8;
+}
+
+.systemMessage .messageText {
+  font-style: italic;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.loadingMessage {
+  padding: 12px 16px;
+  background: var(--bg-message-assistant);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .messagesContainer {
+    padding: 16px;
+  }
+  
+  .welcomeMessage {
+    padding: 40px 20px;
+  }
+  
+  .welcomeMessage h2 {
+    font-size: 24px;
+  }
+  
+  .suggestions {
+    grid-template-columns: 1fr;
+  }
+  
+  .messageContent {
+    gap: 12px;
+  }
+  
+  .messageText {
+    font-size: 15px;
+  }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .suggestion {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .userMessage .messageText {
+  background: var(--bg-message-user);
+  border: 1px solid var(--border-primary);
+}

@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-08-19T16:03:58.701Z",
+  "finalUrl": "http://localhost:3001/",
+  "pageTitle": "",
+  "workspaceContentLoaded": false,
+  "redirectedToHomepage": true,
+  "elementCounts": {
+    "total": 87,
+    "headings": 1,
+    "buttons": 12,
+    "divs": 22,
+    "adminTitle": 0,
+    "adminTabs": 0,
+    "sidebar": 12,
+    "mainContent": 0
+  },
+  "recommendations": [
+    "Page is redirecting to homepage - authentication or routing issue",
+    "Workspace content is not loading - check component rendering"
+  ]
+}

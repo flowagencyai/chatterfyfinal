@@ -1,0 +1,407 @@
+.toggleButton {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1001;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggleButton:hover {
+  background: var(--bg-hover);
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+  z-index: 1000;
+}
+
+.sidebar.closed {
+  transform: translateX(calc(-1 * var(--sidebar-width)));
+}
+
+.sidebarContent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px;
+  padding-top: 56px;
+}
+
+.newChatButton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 20px;
+}
+
+.newChatButton:hover {
+  background: var(--bg-hover);
+}
+
+.threadsList {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 -8px;
+  padding: 0 8px;
+}
+
+.threadGroup {
+  margin-bottom: 20px;
+}
+
+.threadGroupTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 12px;
+  margin-bottom: 4px;
+}
+
+.threadItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  margin-bottom: 2px;
+}
+
+.threadItem:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.threadItem.active {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.threadItem svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.threadTitle {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deleteButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.threadItem:hover .deleteButton {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  background: var(--bg-hover);
+  color: var(--accent-danger);
+}
+
+.userSection {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-primary);
+  margin-top: auto;
+  position: relative;
+}
+
+.usageIndicator {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+.usageText {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.usageBar {
+  width: 100%;
+  height: 4px;
+  background: var(--border-primary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.usageProgress {
+  height: 100%;
+  background: var(--accent-primary);
+  transition: width 0.3s ease;
+}
+
+.themeToggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.themeToggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+.userAvatar {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-primary);
+  color: white;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.userDetails {
+  flex: 1;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.signOutButton {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.signOutButton:hover {
+  color: var(--text-primary);
+}
+
+.signInButton,
+.upgradeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.signInButton {
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+}
+
+.signInButton:hover {
+  background: var(--bg-hover);
+}
+
+.upgradeButton {
+  background: var(--accent-primary);
+  border: none;
+  color: white;
+}
+
+.upgradeButton:hover {
+  background: var(--accent-hover);
+}
+
+/* User Profile Dropdown */
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.userProfile:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.userInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.userEmail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  color: var(--text-secondary);
+  transition: transform 0.2s;
+}
+
+.userProfile:hover .chevron {
+  color: var(--text-primary);
+}
+
+.userMenu {
+  position: absolute;
+  bottom: 100%;
+  left: 12px;
+  right: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1001;
+  margin-bottom: 8px;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.menuItem:hover {
+  background: var(--bg-hover);
+}
+
+.menuDivider {
+  height: 1px;
+  background: var(--border-primary);
+  margin: 8px 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+  }
+  
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+  
+  .userMenu {
+    position: fixed;
+    bottom: auto;
+    top: 50%;
+    left: 20px;
+    right: 20px;
+    transform: translateY(-50%);
+  }
+}

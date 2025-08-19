@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-08-19T15:56:40.434Z",
+  "pageTitle": "",
+  "currentUrl": "http://localhost:3001/",
+  "analysis": {
+    "mainContentAreas": 0,
+    "navigationElements": 2,
+    "interactiveElements": 14
+  },
+  "success": false,
+  "recommendations": [
+    "Could not access workspace page - authentication may be required",
+    "No main content areas detected"
+  ]
+}

@@ -1,0 +1,358 @@
+.pricingPage {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.backButton:hover {
+  color: var(--accent-primary);
+}
+
+.nav {
+  display: flex;
+  gap: 24px;
+}
+
+.nav a {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav a:hover {
+  color: var(--accent-primary);
+}
+
+.hero {
+  text-align: center;
+  padding: 80px 40px 60px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero h1 {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--text-primary), var(--accent-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero p {
+  font-size: 20px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.billingToggle {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 4px;
+  margin: 0 auto;
+  width: fit-content;
+  border: 1px solid var(--border-primary);
+}
+
+.billingToggle button {
+  position: relative;
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.billingToggle button.active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.discount {
+  background: var(--accent-primary);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.plansGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.planCard {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 32px;
+  transition: all 0.3s;
+}
+
+.planCard:hover {
+  border-color: var(--accent-primary);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.planCard.popular {
+  border-color: var(--accent-primary);
+  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+}
+
+.popularBadge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-primary);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.planHeader {
+  margin-bottom: 32px;
+}
+
+.planHeader h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.priceAmount {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.pricePeriod {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.description {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.planBody {
+  margin-bottom: 32px;
+}
+
+.features, .limitations {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  color: var(--text-primary);
+}
+
+.features li svg {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.limitations {
+  margin-top: 16px;
+}
+
+.limitations li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+.limitations li svg {
+  color: var(--accent-danger);
+  flex-shrink: 0;
+}
+
+.planFooter {
+  margin-top: auto;
+}
+
+.ctaButton {
+  display: block;
+  width: 100%;
+  padding: 16px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.ctaButton.primary {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.ctaButton.primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+}
+
+.ctaButton.secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 2px solid var(--border-primary);
+}
+
+.ctaButton.secondary:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.faq {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 80px 40px;
+}
+
+.faq h2 {
+  font-size: 36px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.faqGrid {
+  display: grid;
+  gap: 32px;
+}
+
+.faqItem h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.faqItem p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.footer {
+  text-align: center;
+  padding: 40px;
+  border-top: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+}
+
+.footer a {
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .header {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .hero {
+    padding: 60px 20px 40px;
+  }
+
+  .hero h1 {
+    font-size: 36px;
+  }
+
+  .hero p {
+    font-size: 18px;
+  }
+
+  .plansGrid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 0 20px;
+  }
+
+  .planCard {
+    padding: 24px;
+  }
+
+  .priceAmount {
+    font-size: 40px;
+  }
+
+  .faq {
+    padding: 60px 20px;
+  }
+
+  .faq h2 {
+    font-size: 28px;
+  }
+
+  .footer {
+    padding: 32px 20px;
+  }
+}

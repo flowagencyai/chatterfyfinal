@@ -1,0 +1,266 @@
+.chatArea {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  margin-left: var(--sidebar-width);
+  background: var(--bg-primary);
+  transition: margin-left 0.3s ease;
+}
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+
+.emptyState h2 {
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.emptyState p {
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.inputContainer {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
+  padding: 20px;
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.inputWrapper {
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 24px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.inputWrapper:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(16, 163, 127, 0.1);
+}
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.attachment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.removeAttachment {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-hover);
+  border: none;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.removeAttachment:hover {
+  background: var(--accent-danger);
+  color: white;
+}
+
+.inputForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.attachButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.attachButton:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 16px;
+  font-family: inherit;
+  line-height: 1.5;
+  color: var(--text-primary);
+  padding: 6px 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sendButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.sendButton:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.sendButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.inputFooter {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.inputFooter p {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.inputFooter a {
+  color: var(--text-link);
+  text-decoration: none;
+}
+
+.inputFooter a:hover {
+  text-decoration: underline;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .chatArea {
+    margin-left: 0;
+  }
+  
+  .inputContainer {
+    padding: 16px;
+  }
+  
+  .inputForm {
+    padding: 8px 12px;
+  }
+  
+  .textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Welcome Screen */
+.welcomeScreen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.welcomeContent {
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+}
+
+.welcomeContent h2 {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.welcomeContent p {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
+.suggestions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.suggestionButton {
+  padding: 16px 20px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.suggestionButton:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-secondary);
+  transform: translateY(-1px);
+}

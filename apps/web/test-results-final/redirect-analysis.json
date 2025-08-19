@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-08-19T16:00:16.191Z",
+  "success": false,
+  "redirectUrl": "http://localhost:3001/",
+  "pageTitle": "",
+  "authElements": {
+    "loginButtons": 1,
+    "emailInputs": 0,
+    "forms": 1
+  },
+  "reason": "Redirected away from workspace page"
+}

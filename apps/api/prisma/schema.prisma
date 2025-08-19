@@ -1,0 +1,194 @@
+// apps/api/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Usage {
+  id               String   @id @default(cuid())
+  ts               DateTime
+  day              DateTime
+  provider         String
+  model            String
+  orgId            String
+  userId           String
+  prompt_tokens    Int?
+  completion_tokens Int?
+  total_tokens     Int?
+  cost_usd         Float?
+  createdAt        DateTime @default(now())
+
+  @@index([orgId, day])
+  @@index([provider, model, day])
+}
+
+model Organization {
+  id           String   @id @default(cuid())
+  name         String
+  createdAt    DateTime @default(now())
+  
+  // Stripe Integration
+  stripeCustomerId String? @unique
+  
+  users        User[]
+  subscriptions Subscription[]
+  threads      Thread[]
+  files        FileAsset[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  emailVerified DateTime?
+  image     String?
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  messages  Message[]
+  accounts  Account[]
+  sessions  Session[]
+}
+
+model Plan {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  monthlyCreditsTokens Int      // créditos/mês (tokens)
+  dailyTokenLimit      Int      // limite diário (tokens)
+  storageLimitMB       Int      // limite de armazenamento por org
+  maxFileSizeMB        Int
+  features  String
+  createdAt DateTime @default(now())
+  
+  // Stripe Integration
+  stripePriceId String? @unique  // Stripe Price ID for this plan
+  stripeProductId String?        // Stripe Product ID
+  
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Restrict)
+  active    Boolean  @default(true)
+  
+  // Period management
+  periodStart DateTime @default(now())
+  periodEnd   DateTime
+  
+  // Stripe Integration - CORE FIELDS
+  stripeSubscriptionId String? @unique
+  stripeCustomerId     String?  // Denormalized for quick access
+  stripePriceId        String?
+  stripeStatus         String?  // active, canceled, past_due, etc.
+  
+  // Cancellation Management
+  cancelAtPeriodEnd    Boolean @default(false)
+  cancelledAt          DateTime?
+  cancellationReason   String?
+  
+  // Retention & Analytics
+  retentionOffersCount Int @default(0)
+  lastRetentionOfferAt DateTime?
+  
+  // Billing
+  trialEnd             DateTime?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+}
+
+model Thread {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  title     String?
+  createdBy String
+  createdAt DateTime @default(now())
+  messages  Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  threadId  String
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model FileAsset {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId    String?
+  filename  String
+  mime      String
+  sizeBytes Int
+  sha256    String
+  storagePath String  // local path (dev) ou chave S3
+  createdAt DateTime @default(now())
+
+  @@index([orgId])
+}
+
+/// NextAuth.js core tables
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id                 String   @id @default(cuid())
+  sessionToken       String   @unique
+  userId             String
+  expires            DateTime
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+// Stripe Webhook Events
+model StripeWebhook {
+  id              String   @id @default(cuid())
+  stripeEventId   String   @unique
+  eventType       String
+  processed       Boolean  @default(false)
+  data            String   // JSON payload
+  createdAt       DateTime @default(now())
+  processedAt     DateTime?
+  error           String?
+  
+  @@index([eventType, processed])
+}
