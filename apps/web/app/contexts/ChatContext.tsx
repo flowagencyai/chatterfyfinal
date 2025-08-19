@@ -514,13 +514,16 @@ export function ChatProvider({ children }: ChatProviderProps) {
     // Don't clear localStorage keys that belong to anonymous sessions
     // Those will be handled by the regular anonymous session flow
     
-    // Navigate to home ONLY if not on auth pages to avoid breaking login flow
+    // Navigate to home ONLY if not on auth or pricing pages to avoid breaking flows
     const currentPath = pathname;
     const isOnAuthPage = currentPath.startsWith('/auth') || currentPath.startsWith('/api/auth');
+    const isOnPricingPage = currentPath.startsWith('/pricing');
     
-    if (!isOnAuthPage) {
+    if (!isOnAuthPage && !isOnPricingPage) {
       console.log('🔄 [SECURITY] Redirecionando para home...');
       router.push('/');
+    } else if (isOnPricingPage) {
+      console.log('ℹ️ [SECURITY] Mantendo usuário na página de pricing');
     } else {
       console.log('ℹ️ [SECURITY] Mantendo usuário na página de auth');
     }

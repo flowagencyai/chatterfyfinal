@@ -1,0 +1,47 @@
+# Dockerfile.api - Backend API Container
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Instalar dependências globais necessárias
+RUN apk add --no-cache openssl
+
+# Copiar package files para otimizar cache
+COPY package*.json ./
+COPY apps/api/package*.json ./apps/api/
+COPY packages/core/package*.json ./packages/core/
+COPY packages/shared/package*.json ./packages/shared/
+
+# Instalar dependências
+RUN npm ci --only=production
+
+# Copiar código fonte
+COPY . .
+
+# Gerar Prisma Client
+WORKDIR /app/apps/api
+RUN npx prisma generate
+
+# Voltar para root
+WORKDIR /app
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+# Criar diretórios necessários
+RUN mkdir -p /app/uploads && chown -R nodejs:nodejs /app/uploads
+RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app/logs
+
+# Mudar para usuário não-root
+USER nodejs
+
+# Expor porta
+EXPOSE 8787
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8787/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# Comando de start
+CMD ["npm", "run", "start:prod"]

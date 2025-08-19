@@ -1,74 +1,213 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import styles from './pricing.module.css';
 import '../globals.css';
+import { StripeProvider } from '../components/StripeProvider';
 
-const plans = [
-  {
-    id: 'free',
-    name: 'Gratuito',
-    price: 'R$ 0',
-    period: '/mês',
-    description: 'Perfeito para testar nossa plataforma',
-    features: [
-      '3 mensagens por sessão',
-      'Histórico temporário',
-      'Suporte por email',
-      'Modelos básicos'
-    ],
-    limitations: [
-      'Limite de 3 mensagens',
-      'Sem upload de arquivos',
-      'Histórico não salvo'
-    ],
-    cta: 'Começar Grátis',
-    ctaLink: '/',
-    popular: false
-  },
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: 'R$ 29',
-    period: '/mês',
-    description: 'Ideal para uso pessoal e pequenos projetos',
-    features: [
-      '100 mensagens por dia',
-      'Histórico salvo',
-      'Upload de arquivos (10MB)',
-      'Todos os modelos',
-      'Suporte prioritário'
-    ],
-    cta: 'Começar Teste Grátis',
-    ctaLink: '/auth',
-    popular: true
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 'R$ 99',
-    period: '/mês',
-    description: 'Para profissionais e equipes pequenas',
-    features: [
-      'Mensagens ilimitadas',
-      'Histórico ilimitado',
-      'Upload de arquivos (100MB)',
-      'Todos os modelos premium',
-      'API access',
-      'Suporte prioritário',
-      'Integrações avançadas'
-    ],
-    cta: 'Começar Teste Grátis',
-    ctaLink: '/auth',
-    popular: false
-  }
-];
+// Plans serão carregados dinamicamente da API
 
 export default function PricingPage() {
+  const { data: session } = useSession();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [plans, setPlans] = useState<any[]>([]);
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPlans();
+    if (session?.user) {
+      fetchCurrentPlan();
+    }
+  }, [session]);
+
+  const fetchPlans = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/v1/plans`);
+      const data = await response.json();
+      setPlans(data.plans || []);
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCurrentPlan = async () => {
+    if (!session?.user?.id) return;
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/v1/user/plan`, {
+        headers: {
+          'X-Org-Id': session.user.id,
+          'X-User-Id': session.user.id
+        }
+      });
+      
+      const data = await response.json();
+      if (data.plan) {
+        setCurrentPlan(data.plan.code);
+      }
+    } catch (error) {
+      console.error('Error fetching current plan:', error);
+    }
+  };
+
+  const handleUpgrade = async (planCode: string) => {
+    const isFreePlan = planCode.toLowerCase() === 'free';
+    
+    // Para usuários anônimos - redirecionar para cadastro sem alerts
+    if (!session?.user?.email) {
+      if (isFreePlan) {
+        localStorage.setItem('pending_upgrade', 'free');
+      }
+      window.location.href = '/auth';
+      return;
+    }
+
+    // Para plano FREE de usuário logado - processar silenciosamente
+    if (isFreePlan) {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/v1/user/upgrade`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Org-Id': session.user.id || '',
+            'X-User-Id': session.user.id || ''
+          },
+          body: JSON.stringify({
+            planCode,
+            email: session.user.email,
+            name: session.user.name
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Redirecionar para dashboard sem alert
+          window.location.href = '/';
+        } else {
+          console.error('Free plan upgrade failed:', data.error);
+        }
+      } catch (error) {
+        console.error('Free plan upgrade error:', error);
+      }
+      return;
+    }
+
+    // Para planos pagos - usar Stripe
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/v1/user/upgrade`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Org-Id': session.user.id || '',
+          'X-User-Id': session.user.id || ''
+        },
+        body: JSON.stringify({
+          planCode,
+          email: session.user.email,
+          name: session.user.name
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        throw new Error(data.error || 'Failed to process upgrade');
+      }
+    } catch (error) {
+      console.error('Upgrade error:', error);
+    }
+  };
+
+  const formatPlanForDisplay = (plan: any) => {
+    const isCurrentPlan = currentPlan === plan.code;
+    const isFree = plan.code.toLowerCase() === 'free';
+    const isPro = plan.code.toLowerCase() === 'pro';
+    const isLoggedIn = !!session?.user?.email;
+    
+    // Lógica inteligente para CTA
+    let cta = 'Começar';
+    let ctaDisabled = false;
+    let ctaStyle = 'primary';
+    
+    if (isCurrentPlan) {
+      cta = 'Plano Atual';
+      ctaDisabled = true;
+      ctaStyle = 'current';
+    } else if (isFree) {
+      if (isLoggedIn) {
+        // Usuário logado pode fazer downgrade para FREE
+        cta = 'Mudar para Grátis';
+        ctaStyle = 'secondary';
+      } else {
+        // Usuário anônimo
+        cta = 'Começar Grátis';
+        ctaStyle = 'secondary';
+      }
+    } else if (isPro) {
+      if (isLoggedIn) {
+        cta = 'Fazer Upgrade';
+        ctaStyle = 'primary';
+      } else {
+        cta = 'Assinar Pro';
+        ctaStyle = 'primary';
+      }
+    }
+    
+    return {
+      id: plan.code.toLowerCase(),
+      name: plan.name,
+      price: isFree ? 'R$ 0' : 'R$ 49,90',
+      period: '/mês',
+      description: isFree ? 
+        'Perfeito para testar nossa plataforma' : 
+        'Para profissionais e empresas',
+      features: isFree ? [
+        '2M tokens por mês',
+        '200MB de armazenamento',
+        '5 mensagens anônimas',
+        'Modelos básicos de IA',
+        'Suporte por email'
+      ] : [
+        '10M tokens por mês',  
+        '2GB de armazenamento',
+        'Todos os modelos premium',
+        'Upload de imagens e documentos',
+        'Histórico completo',
+        'API de integração',
+        'Suporte prioritário'
+      ],
+      cta: cta,
+      ctaDisabled: ctaDisabled,
+      ctaStyle: ctaStyle,
+      popular: isPro,
+      planCode: plan.code,
+      isCurrentPlan: isCurrentPlan
+    };
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.pricingPage}>
+        <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+          <div style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</div>
+          <p>Carregando planos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const displayPlans = plans.map(formatPlanForDisplay);
 
   return (
-    <div className={styles.pricingPage}>
+    <StripeProvider>
+      <div className={styles.pricingPage}>
       {/* Header */}
       <div className={styles.header}>
         <a href="/" className={styles.backButton}>
@@ -117,7 +256,7 @@ export default function PricingPage() {
 
       {/* Plans Grid */}
       <div className={styles.plansGrid}>
-        {plans.map((plan) => (
+        {displayPlans.map((plan) => (
           <div
             key={plan.id}
             className={`${styles.planCard} ${plan.popular ? styles.popular : ''}`}
@@ -158,33 +297,33 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              {plan.limitations && (
-                <ul className={styles.limitations}>
-                  {plan.limitations.map((limitation, index) => (
-                    <li key={index}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path
-                          d="M18 6L6 18M6 6l12 12"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {limitation}
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
 
             <div className={styles.planFooter}>
-              <a
-                href={plan.ctaLink}
-                className={`${styles.ctaButton} ${plan.popular ? styles.primary : styles.secondary}`}
+              <button
+                onClick={() => plan.ctaDisabled ? null : handleUpgrade(plan.planCode)}
+                disabled={plan.ctaDisabled}
+                className={`${styles.ctaButton} ${
+                  plan.ctaStyle === 'current' ? styles.current : 
+                  plan.ctaStyle === 'primary' ? styles.primary : 
+                  styles.secondary
+                }`}
+                style={{ 
+                  opacity: plan.ctaDisabled ? 0.7 : 1,
+                  cursor: plan.ctaDisabled ? 'default' : 'pointer',
+                  // Estilo especial para plano atual
+                  ...(plan.isCurrentPlan ? {
+                    background: '#f3f4f6',
+                    color: '#6b7280',
+                    border: '2px solid #d1d5db'
+                  } : {})
+                }}
               >
+                {plan.isCurrentPlan && (
+                  <span style={{ marginRight: '8px' }}>✓</span>
+                )}
                 {plan.cta}
-              </a>
+              </button>
             </div>
           </div>
         ))}
@@ -235,6 +374,7 @@ export default function PricingPage() {
           Tem dúvidas? <a href="mailto:suporte@chatgpt-clone.com">Entre em contato</a>
         </p>
       </div>
-    </div>
+      </div>
+    </StripeProvider>
   );
 }

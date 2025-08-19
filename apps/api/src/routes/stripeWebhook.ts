@@ -121,12 +121,22 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     throw new Error('No orgId in subscription metadata');
   }
 
+  // Get plan from Stripe price ID
+  const stripePriceId = subscription.items.data[0]?.price.id;
+  const plan = await prisma.plan.findFirst({
+    where: { stripePriceId }
+  });
+
+  if (!plan) {
+    throw new Error(`No plan found for Stripe price ID: ${stripePriceId}`);
+  }
+
   // Update existing subscription or create new one
   await prisma.subscription.upsert({
     where: { stripeSubscriptionId: subscription.id },
     create: {
       orgId,
-      planId: 'pro', // TODO: Map from Stripe price ID to plan
+      planId: plan.id,
       stripeSubscriptionId: subscription.id,
       stripeCustomerId: subscription.customer as string,
       stripePriceId: subscription.items.data[0]?.price.id,

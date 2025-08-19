@@ -34,7 +34,7 @@ export async function routeGetUserPlan(req: Request, res: Response) {
       }
 
       return res.json({
-        currentPlan: {
+        plan: {
           ...freePlan,
           features: JSON.parse(freePlan.features)
         },
@@ -43,7 +43,7 @@ export async function routeGetUserPlan(req: Request, res: Response) {
     }
 
     res.json({
-      currentPlan: {
+      plan: {
         ...subscription.plan,
         features: JSON.parse(subscription.plan.features)
       },

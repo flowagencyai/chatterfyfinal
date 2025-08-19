@@ -1,12 +1,15 @@
 import Stripe from 'stripe';
 
-// Initialize Stripe only if API key is provided
+// Initialize Stripe with Live API key
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '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';
+
 let stripe: Stripe | null = null;
 
-if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('...')) {
-  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+if (STRIPE_SECRET_KEY && !STRIPE_SECRET_KEY.includes('...')) {
+  stripe = new Stripe(STRIPE_SECRET_KEY, {
     apiVersion: '2024-06-20',
   });
+  console.log('✅ [STRIPE] Initialized with Live API key');
 } else {
   console.warn('⚠️ [STRIPE] Not initialized - missing or placeholder API key');
 }
