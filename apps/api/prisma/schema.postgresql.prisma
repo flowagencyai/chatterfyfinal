@@ -1,10 +1,10 @@
-// apps/api/prisma/schema.prisma
+// Schema PostgreSQL otimizado para produção
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -34,7 +34,7 @@ model Organization {
   // Stripe Integration
   stripeCustomerId String? @unique
   
-  // API Key Management
+  // API Key Management - NOVOS CAMPOS
   apiKey           String? @unique
   apiKeyCreatedAt  DateTime?
   
@@ -62,16 +62,16 @@ model Plan {
   id        String   @id @default(cuid())
   code      String   @unique
   name      String
-  monthlyCreditsTokens Int      // créditos/mês (tokens)
-  dailyTokenLimit      Int      // limite diário (tokens)
-  storageLimitMB       Int      // limite de armazenamento por org
+  monthlyCreditsTokens Int
+  dailyTokenLimit      Int
+  storageLimitMB       Int
   maxFileSizeMB        Int
   features  String
   createdAt DateTime @default(now())
   
   // Stripe Integration
-  stripePriceId String? @unique  // Stripe Price ID for this plan
-  stripeProductId String?        // Stripe Product ID
+  stripePriceId String? @unique
+  stripeProductId String?
   
   subscriptions Subscription[]
 }
@@ -88,11 +88,11 @@ model Subscription {
   periodStart DateTime @default(now())
   periodEnd   DateTime
   
-  // Stripe Integration - CORE FIELDS
+  // Stripe Integration
   stripeSubscriptionId String? @unique
-  stripeCustomerId     String?  // Denormalized for quick access
+  stripeCustomerId     String?
   stripePriceId        String?
-  stripeStatus         String?  // active, canceled, past_due, etc.
+  stripeStatus         String?
   
   // Cancellation Management
   cancelAtPeriodEnd    Boolean @default(false)
@@ -142,13 +142,13 @@ model FileAsset {
   mime      String
   sizeBytes Int
   sha256    String
-  storagePath String  // local path (dev) ou chave S3
+  storagePath String
   createdAt DateTime @default(now())
 
   @@index([orgId])
 }
 
-/// NextAuth.js core tables
+// NextAuth.js core tables
 model Account {
   id                 String  @id @default(cuid())
   userId             String
@@ -189,7 +189,7 @@ model StripeWebhook {
   stripeEventId   String   @unique
   eventType       String
   processed       Boolean  @default(false)
-  data            String   // JSON payload
+  data            String
   createdAt       DateTime @default(now())
   processedAt     DateTime?
   error           String?

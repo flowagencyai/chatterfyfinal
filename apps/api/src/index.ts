@@ -12,11 +12,16 @@ import { routeAdminSeedPlans } from './routes/adminSeedPlans';
 import { routeAdminSetPlan } from './routes/adminSetPlan';
 import { routeGetPlans } from './routes/getPlans';
 import { routeGetUserPlan } from './routes/getUserPlan';
+import { routeGetUserProfile } from './routes/getUserProfile';
+import { routeUpdateUserProfile } from './routes/updateUserProfile';
 import { routeUpgradePlan } from './routes/upgradePlan';
 import { routeCancelSubscription } from './routes/cancelSubscription';
 import { routeReactivateSubscription } from './routes/reactivateSubscription';
 import { routeSubscriptionDetails } from './routes/subscriptionDetails';
 import { routeStripeWebhook } from './routes/stripeWebhook';
+import { routeBillingPortal } from './routes/billingPortal';
+import { routeGenerateApiKey } from './routes/generateApiKey';
+import { routeRegenerateApiKey } from './routes/regenerateApiKey';
 import { planGuard } from './middleware/planGuard';
 import { planGuardWithAnonymous } from './middleware/planGuardWithAnonymous';
 
@@ -51,12 +56,19 @@ app.post('/v1/embeddings', planGuard, routeEmbeddings);
 // Plan management routes
 app.get('/v1/plans', routeGetPlans);
 app.get('/v1/user/plan', routeGetUserPlan);
+app.get('/v1/user/profile', routeGetUserProfile);
+app.put('/v1/user/profile', routeUpdateUserProfile);
 app.post('/v1/user/upgrade', routeUpgradePlan);
 
 // Subscription management routes (Stripe-powered)
 app.get('/v1/user/subscription-detailed', routeSubscriptionDetails);
 app.post('/v1/user/cancel-subscription', routeCancelSubscription);
 app.post('/v1/user/reactivate-subscription', routeReactivateSubscription);
+app.post('/v1/user/billing-portal', routeBillingPortal);
+
+// API Key management routes
+app.post('/v1/user/generate-api-key', routeGenerateApiKey);
+app.post('/v1/user/regenerate-api-key', routeRegenerateApiKey);
 
 // Admin routes
 app.get('/admin/usage', routeAdminUsage);
