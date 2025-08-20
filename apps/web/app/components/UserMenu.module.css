@@ -1,0 +1,184 @@
+.userMenuContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  font-size: 14px;
+  height: 40px;
+  min-width: 120px;
+}
+
+.menuButton:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+.userAvatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-tertiary);
+  border-radius: 50%;
+  color: var(--text-secondary);
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+  color: var(--text-secondary);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.dropdownMenu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  min-width: 240px;
+  z-index: 1000;
+  backdrop-filter: blur(20px);
+  animation: menuFadeIn 0.15s ease-out;
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap:12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.menuItem:hover {
+  background: var(--bg-secondary);
+  transform: translateY(-1px);
+}
+
+.menuItem:active {
+  transform: translateY(0);
+}
+
+/* Primeiro item (Entrar) com destaque */
+.menuItem:first-child {
+  font-weight: 500;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  color: white;
+  margin-bottom: 4px;
+}
+
+.menuItem:first-child:hover {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* Segundo item (Cadastre-se) com destaque secundário */
+.menuItem:nth-child(2) {
+  font-weight: 500;
+  color: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+  margin-bottom: 4px;
+}
+
+.menuItem:nth-child(2):hover {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.menuDivider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 8px 0;
+}
+
+/* Ícones dos itens */
+.menuItem svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.menuItem:hover svg {
+  opacity: 1;
+}
+
+.menuItem:first-child svg,
+.menuItem:nth-child(2):hover svg {
+  opacity: 1;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .menuButton {
+    min-width: 100px;
+    padding: 6px 10px;
+    height: 36px;
+  }
+  
+  .dropdownMenu {
+    min-width: 200px;
+    right: -20px;
+  }
+  
+  .menuItem {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .dropdownMenu {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  .menuItem:first-child {
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+  }
+  
+  .menuItem:first-child:hover {
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+    filter: brightness(1.2);
+  }
+}
