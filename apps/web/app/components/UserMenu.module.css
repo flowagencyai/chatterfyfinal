@@ -88,6 +88,7 @@
   transition: all 0.2s ease;
   text-align: left;
   line-height: 1.4;
+  text-decoration: none;
 }
 
 .menuItem:hover {
