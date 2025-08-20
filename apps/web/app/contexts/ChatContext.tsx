@@ -82,6 +82,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const [conversationCount, setConversationCount] = useState(0);
   const [isDraftMode, setIsDraftMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   
   // BUGFIX: Use refs to persist state during re-renders
   const threadsRef = useRef<Thread[]>([]);
@@ -127,61 +128,60 @@ export function ChatProvider({ children }: ChatProviderProps) {
   // SECURITY FIX: Clear user data when authentication status changes
   const prevIsAnonymousRef = useRef<boolean | null>(null);
   useEffect(() => {
+    // BUGFIX: Skip if session is still loading to avoid false logout detection
+    if (status === 'loading') {
+      return;
+    }
+    
     // Skip on first initialization
     if (prevIsAnonymousRef.current === null) {
       prevIsAnonymousRef.current = isAnonymous;
       return;
     }
     
-    // Detect logout (authenticated -> anonymous)
-    if (prevIsAnonymousRef.current === false && isAnonymous === true) {
+    // BUGFIX: Only trigger on actual auth state changes, not hydration issues
+    const wasAnonymous = prevIsAnonymousRef.current;
+    const isNowAnonymous = isAnonymous;
+    
+    // Detect actual logout (authenticated -> anonymous) 
+    // Only if we had a valid session before
+    if (wasAnonymous === false && isNowAnonymous === true && session === null) {
       console.log('🔒 [SECURITY] Logout detectado - limpando dados do usuário');
       clearUserDataOnLogout();
     }
     
     // Detect login (anonymous -> authenticated)  
-    if (prevIsAnonymousRef.current === true && isAnonymous === false) {
+    if (wasAnonymous === true && isNowAnonymous === false && session?.user) {
       console.log('🔐 [SECURITY] Login detectado - carregando dados do usuário');
       // Force re-initialization to load user data
       setIsInitialized(false);
     }
     
     prevIsAnonymousRef.current = isAnonymous;
-  }, [isAnonymous]);
+  }, [isAnonymous, status, session]);
+
+  // BUGFIX: Wait for Next.js hydration to complete
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   // Check if we're in draft mode (on homepage with no thread selected)
   useEffect(() => {
     setIsDraftMode(pathname === '/');
   }, [pathname]);
 
-  // BUGFIX: Restore current thread from URL on page refresh
-  useEffect(() => {
-    if (!isInitialized || threads.length === 0) return;
-    
-    // Extract thread ID from current path
-    const threadMatch = pathname.match(/^\/c\/(.+)$/);
-    if (threadMatch) {
-      const threadId = threadMatch[1];
-      const thread = threads.find(t => t.id === threadId);
-      
-      if (thread && (!currentThread || currentThread.id !== threadId)) {
-        console.log('🔄 [ChatContext] Restaurando thread da URL:', threadId);
-        setCurrentThread(thread);
-      } else if (!thread) {
-        console.log('⚠️ [ChatContext] Thread não encontrada na URL, redirecionando para home');
-        router.push('/');
-      }
-    } else if (pathname === '/' && currentThread) {
-      // If we're on homepage but have a current thread, clear it (draft mode)
-      console.log('🏠 [ChatContext] Entrando em modo draft, limpando thread atual');
-      setCurrentThread(null);
-    }
-  }, [pathname, threads, isInitialized, currentThread, router]);
+  // BUGFIX REMOVED: The problematic navigation useEffect was causing state resets
+  // The initialization logic already handles URL restoration correctly
+  // Navigation between threads is handled by Sidebar clicks and router.push() in createThread
 
-  // Initialize on mount
+  // Initialize on mount - BUGFIX: Wait for hydration AND session
   useEffect(() => {
-    if (isInitialized || !anonymousSession.sessionId) return; // Wait for session to be ready
-    console.log('🟢 [ChatContext] Inicializando contexto com sessão:', anonymousSession.sessionId);
+    if (isInitialized || !anonymousSession.sessionId || !isHydrated) return; // Wait for session AND hydration
+    console.log('🟢 [ChatContext] Inicializando contexto com sessão (pós-hidratação):', anonymousSession.sessionId);
+    console.log('🔍 [DEBUG] URL atual:', typeof window !== 'undefined' ? window.location.href : 'SSR');
+    console.log('🔍 [DEBUG] Pathname:', pathname);
+    console.log('🔍 [DEBUG] Threads atuais:', threads.length);
+    console.log('🔍 [DEBUG] Performance.navigation.type:', typeof window !== 'undefined' && window.performance ? window.performance.navigation?.type : 'N/A');
     
     // Check if we already have data loaded for this session to avoid reset
     const currentStorageKey = isAnonymous 
@@ -209,65 +209,166 @@ export function ChatProvider({ children }: ChatProviderProps) {
       document.documentElement.setAttribute('data-theme', defaultTheme);
     }
 
-    // Load or create anonymous session - use the new hook
+    // BUGFIX: Try to load threads from all possible sources (user + anonymous)
     const hasValidSession = session?.user?.email;
-    if (!hasValidSession) {
+    console.log('🔍 [DEBUG] Session status:', status, 'hasValidSession:', !!hasValidSession, 'isAnonymous:', isAnonymous);
+    console.log('🔍 [DEBUG] Session user:', session?.user?.email);
+    
+    // First, try to load from user session if we have one
+    let threadsLoaded = false;
+    if (hasValidSession) {
+      console.log('🔍 [DEBUG] Tentando carregar threads de usuário logado:', session.user.email);
+      const userThreads = localStorage.getItem(`${STORAGE_KEY_THREADS}_${session.user.email}`);
+      if (userThreads) {
+        const parsed = JSON.parse(userThreads);
+        console.log('🔍 [DEBUG] Threads de usuário encontradas:', parsed.length);
+        setThreads(parsed);
+        threadsLoaded = true;
+        
+        // Extract threadId from current URL path (/c/[threadId])
+        const pathMatch = pathname.match(/^\/c\/(.+)$/);
+        const currentThreadId = pathMatch?.[1];
+        
+        if (currentThreadId) {
+          const targetThread = parsed.find((t: Thread) => t.id === currentThreadId);
+          setCurrentThread(targetThread || null);
+          console.log('🔄 [ChatContext] Thread de usuário restaurada da URL:', currentThreadId, !!targetThread);
+        } else {
+          setCurrentThread(null);
+        }
+      }
+    }
+    
+    // If no user threads found, try anonymous session
+    if (!threadsLoaded) {
       const sessionId = anonymousSession.sessionId;
       
       // Load anonymous threads
       const savedThreads = localStorage.getItem(`${STORAGE_KEY_THREADS}_${sessionId}`);
+      console.log('🔍 [DEBUG] SavedThreads key:', `${STORAGE_KEY_THREADS}_${sessionId}`);
+      console.log('🔍 [DEBUG] SavedThreads raw:', savedThreads ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
       if (savedThreads) {
         const parsed = JSON.parse(savedThreads);
+        console.log('🔍 [DEBUG] Parsed threads:', parsed.length, 'threads');
         setThreads(parsed);
         
         // Count actual threads with messages (real conversations)
         const actualConversations = parsed.filter((t: Thread) => t.messages && t.messages.length > 0).length;
         console.log('🟢 [ChatContext] Conversações carregadas:', actualConversations);
+        console.log('🟢 [ChatContext] Threads encontradas:', parsed.map(t => `${t.id.substring(0,8)}...${t.title}`));
         setConversationCount(actualConversations);
+        
+        // BUGFIX: Debug pathname durante inicialização
+        console.log('🔍 [ChatContext] Pathname durante inicialização:', pathname);
+        console.log('🔍 [ChatContext] Window location:', typeof window !== 'undefined' ? window.location.href : 'SSR');
         
         // Extract threadId from current URL path (/c/[threadId])
         const pathMatch = pathname.match(/^\/c\/(.+)$/);
         const currentThreadId = pathMatch?.[1];
         
+        console.log('🔍 [ChatContext] PathMatch:', pathMatch, 'ThreadId:', currentThreadId);
+        
         if (currentThreadId) {
           const targetThread = parsed.find((t: Thread) => t.id === currentThreadId);
+          console.log('🔍 [ChatContext] TargetThread encontrada:', !!targetThread, targetThread?.title);
           setCurrentThread(targetThread || null);
+          console.log('🔄 [ChatContext] CurrentThread restaurado da URL:', currentThreadId);
         } else {
+          console.log('🏠 [ChatContext] Nenhum threadId na URL, entrando em modo draft');
           setCurrentThread(null); // No thread selected, will show draft mode
         }
       } else {
         // No existing threads, start in draft mode
+        console.log('🔍 [DEBUG] Nenhum dado salvo encontrado - iniciando limpo');
+        console.log('🔍 [DEBUG] LocalStorage keys:', typeof window !== 'undefined' ? Object.keys(localStorage) : 'N/A');
         setThreads([]);
         setCurrentThread(null);
         setConversationCount(0);
       }
-    } else if (hasValidSession) {
-      // Load user threads from localStorage (would be from API in production)
-      const savedThreads = localStorage.getItem(`${STORAGE_KEY_THREADS}_${session.user.email}`);
-      if (savedThreads) {
-        const parsed = JSON.parse(savedThreads);
-        setThreads(parsed);
+    }
+    
+    // BUGFIX: Final fallback - try all possible thread keys in localStorage
+    if (!threadsLoaded && threads.length === 0 && typeof window !== 'undefined') {
+      console.log('🔍 [DEBUG] Tentando fallback - procurando threads em qualquer chave do localStorage');
+      const allKeys = Object.keys(localStorage);
+      console.log('🔍 [DEBUG] LocalStorage keys:', allKeys);
+      
+      // Look for any chat_threads_ key (both user and anonymous)
+      const threadKeys = allKeys.filter(key => 
+        key.startsWith('chat_threads_') && 
+        key !== 'chat_threads_' && // Exclude empty key
+        key.length > 'chat_threads_'.length // Must have content after prefix
+      );
+      console.log('🔍 [DEBUG] Thread keys encontradas:', threadKeys);
+      
+      if (threadKeys.length > 0) {
+        // Priority: user threads first (@), then anonymous
+        const userThreadKeys = threadKeys.filter(key => key.includes('@'));
+        const anonThreadKeys = threadKeys.filter(key => !key.includes('@'));
         
-        // Extract threadId from current URL path (/c/[threadId])
-        const pathMatch = pathname.match(/^\/c\/(.+)$/);
-        const currentThreadId = pathMatch?.[1];
+        console.log('🔍 [DEBUG] User thread keys:', userThreadKeys);
+        console.log('🔍 [DEBUG] Anon thread keys:', anonThreadKeys);
         
-        if (currentThreadId) {
-          const targetThread = parsed.find((t: Thread) => t.id === currentThreadId);
-          setCurrentThread(targetThread || null);
-        } else {
-          setCurrentThread(null); // No thread selected, will show draft mode
+        // Try user threads first, then anonymous
+        const keysToTry = [...userThreadKeys, ...anonThreadKeys];
+        
+        for (const threadKey of keysToTry) {
+          const threadData = localStorage.getItem(threadKey);
+          if (threadData) {
+            const parsed = JSON.parse(threadData);
+            console.log('🔍 [DEBUG] FALLBACK: Carregando threads de:', threadKey, 'Count:', parsed.length);
+            setThreads(parsed);
+            threadsLoaded = true;
+            
+            // Try to find current thread
+            const pathMatch = pathname.match(/^\/c\/(.+)$/);
+            const currentThreadId = pathMatch?.[1];
+            
+            if (currentThreadId) {
+              const targetThread = parsed.find((t: Thread) => t.id === currentThreadId);
+              setCurrentThread(targetThread || null);
+              console.log('🔄 [ChatContext] FALLBACK Thread restaurada:', currentThreadId, !!targetThread);
+              
+              // If found the thread, break the loop
+              if (targetThread) {
+                break;
+              }
+            } else {
+              // No specific thread requested, use first valid data
+              break;
+            }
+          }
         }
-      } else {
-        // No existing threads, start in draft mode
-        setThreads([]);
-        setCurrentThread(null);
+      }
+    }
+    
+    // Final cleanup if still no threads
+    if (!threadsLoaded && threads.length === 0) {
+      console.log('🔍 [DEBUG] Nenhum dado encontrado em nenhuma fonte - iniciando limpo');
+      setThreads([]);
+      setCurrentThread(null);
+      if (isAnonymous) {
+        setConversationCount(0);
       }
     }
     
     setIsInitialized(true);
     console.log('🟢 [ChatContext] Contexto inicializado com sucesso!');
-  }, [isInitialized, anonymousSession.sessionId, session?.user?.email, pathname]); // Include necessary deps
+  }, [isInitialized, anonymousSession.sessionId, session?.user?.email, pathname, isHydrated, isAnonymous]); // Include hydration dependency
+
+  // BUGFIX: Ensure threads are visible in sidebar after initialization
+  useEffect(() => {
+    if (isInitialized && threads.length > 0) {
+      console.log('🔍 [ChatContext] Verificando visibilidade das threads na sidebar...');
+      console.log('🔍 [ChatContext] Threads carregadas:', threads.map(t => `${t.id.substring(0,8)}...${t.title}`));
+      
+      // Update refs to ensure consistency
+      threadsRef.current = threads;
+      if (currentThread) {
+        currentThreadRef.current = currentThread;
+      }
+    }
+  }, [isInitialized, threads, currentThread]);
 
   // Save threads when they change
   useEffect(() => {
@@ -414,7 +515,17 @@ export function ChatProvider({ children }: ChatProviderProps) {
     console.log('🟡 [ChatContext] threadsRef count:', threadsRef.current.length);
     console.log('🟡 [ChatContext] currentThreadRef:', currentThreadRef.current);
     
-    // BUGFIX: Use refs as fallback when state is lost
+    // BUGFIX: Always ensure state consistency with refs
+    if (threads.length === 0 && threadsRef.current.length > 0) {
+      console.log('🔄 [ChatContext] BUGFIX: Restaurando threads do ref para state');
+      setThreads(threadsRef.current);
+    }
+    
+    if (!currentThread && currentThreadRef.current) {
+      console.log('🔄 [ChatContext] BUGFIX: Restaurando currentThread do ref para state');
+      setCurrentThread(currentThreadRef.current);
+    }
+    
     const actualThreads = threads.length > 0 ? threads : threadsRef.current;
     const actualCurrentThread = currentThread || currentThreadRef.current;
     
