@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Chat SaaS boilerplate with OpenAI-compatible API endpoints and multi-provider support. Monorepo structure with Express API backend, Next.js frontend, and shared packages. Features include chat completions, file uploads, usage tracking, and multi-tenant support with plan-based limits.
+Chatterfy is a Chat SaaS boilerplate with OpenAI-compatible API endpoints and multi-provider support. Monorepo structure with Express API backend, Next.js frontend, and shared packages. Features include chat completions, file uploads, usage tracking, and multi-tenant support with plan-based limits.
 
 ## Development Commands
 

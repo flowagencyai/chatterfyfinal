@@ -36,9 +36,9 @@ const handler = NextAuth({
           const result = await transport.sendMail({
             from: process.env.EMAIL_FROM,
             to: email,
-            subject: "🚀 Link de acesso ao Chat SaaS",
+            subject: "🚀 Link de acesso ao Chatterfy",
             text: `Clique no link para acessar: ${url}`,
-            html: `<p>Clique no link para acessar: <a href="${url}">Entrar no Chat SaaS</a></p>`,
+            html: `<p>Clique no link para acessar: <a href="${url}">Entrar no Chatterfy</a></p>`,
           });
           
           console.log('✅ [NextAuth] SIMPLIFICADO - Email enviado com sucesso!', result.messageId);

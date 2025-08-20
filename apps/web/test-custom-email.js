@@ -45,8 +45,8 @@ async function testCustomEmail() {
       }
       
       console.log('\n📧 NOVO EMAIL PERSONALIZADO INCLUI:');
-      console.log('   ✅ Assunto: "🚀 Complete seu cadastro no Chat SaaS"');
-      console.log('   ✅ Título: "🎉 Bem-vindo ao Chat SaaS!"');
+      console.log('   ✅ Assunto: "🚀 Complete seu cadastro no Chatterfy"');
+      console.log('   ✅ Título: "🎉 Bem-vindo ao Chatterfy!"');
       console.log('   ✅ Botão: "✨ Completar Cadastro e Entrar"');
       console.log('   ✅ Lista de benefícios:');
       console.log('      • 💬 Conversas ilimitadas com IA');

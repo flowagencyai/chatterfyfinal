@@ -1,5 +1,5 @@
 {
-  "name": "chat-saas-boilerplate",
+  "name": "chatterfy",
   "private": true,
   "workspaces": [
     "apps/*",

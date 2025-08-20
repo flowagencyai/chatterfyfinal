@@ -240,7 +240,7 @@ export default function ChatPage() {
     <main>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
-          <h1>Chat SaaS</h1>
+          <h1>Chatterfy</h1>
           <p style={{ margin: 0, opacity: 0.7 }}>
             Olá, {userInfo.name || userInfo.email} • {userInfo.orgName}
           </p>

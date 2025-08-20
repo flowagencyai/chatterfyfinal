@@ -133,7 +133,7 @@ export default function Page() {
 
   return (
     <main>
-      <h1>Chat SaaS (Auth + S3 Upload)</h1>
+      <h1>Chatterfy (Auth + S3 Upload)</h1>
       <div style={{ display:'flex', gap:8, marginBottom:12 }}>
         <input value={orgId} onChange={e=>setOrgId(e.target.value)} placeholder="Org ID" />
         <input value={userId} onChange={e=>setUserId(e.target.value)} placeholder="User ID" />

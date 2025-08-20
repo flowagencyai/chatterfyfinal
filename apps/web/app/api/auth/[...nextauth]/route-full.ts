@@ -39,14 +39,14 @@ const handler = NextAuth({
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
               <div style="background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
                 <div style="text-align: center; margin-bottom: 30px;">
-                  <h1 style="color: #333; font-size: 28px; margin-bottom: 10px;">🎉 Bem-vindo ao Chat SaaS!</h1>
+                  <h1 style="color: #333; font-size: 28px; margin-bottom: 10px;">🎉 Bem-vindo ao Chatterfy!</h1>
                   <p style="color: #666; font-size: 16px; margin: 0;">Complete seu cadastro para começar a usar conversas ilimitadas</p>
                 </div>
                 
                 <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
                   <p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">
                     Olá! 👋<br><br>
-                    Você solicitou acesso ao nosso Chat SaaS. Clique no botão abaixo para <strong>completar seu cadastro</strong> e começar a usar:
+                    Você solicitou acesso ao nosso Chatterfy. Clique no botão abaixo para <strong>completar seu cadastro</strong> e começar a usar:
                   </p>
                   
                   <ul style="color: #666; margin: 20px 0; padding-left: 20px;">
@@ -72,7 +72,7 @@ const handler = NextAuth({
                 
                 <div style="text-align: center; margin-top: 20px;">
                   <p style="color: #666; font-size: 12px; margin: 0;">
-                    Chat SaaS - Sua IA pessoal para conversas inteligentes
+                    Chatterfy - Sua IA pessoal para conversas inteligentes
                   </p>
                 </div>
               </div>
@@ -80,7 +80,7 @@ const handler = NextAuth({
           `;
 
           const emailText = `
-Bem-vindo ao Chat SaaS! 🎉
+Bem-vindo ao Chatterfy! 🎉
 
 Complete seu cadastro para começar a usar conversas ilimitadas.
 
@@ -96,7 +96,7 @@ Com sua conta você terá:
 Este link é válido por 24 horas.
 Se você não solicitou este cadastro, pode ignorar este email.
 
-Chat SaaS - Sua IA pessoal para conversas inteligentes
+Chatterfy - Sua IA pessoal para conversas inteligentes
           `;
 
           console.log('📮 [NextAuth] Enviando email para:', email);
@@ -104,7 +104,7 @@ Chat SaaS - Sua IA pessoal para conversas inteligentes
           transport.sendMail({
             from,
             to: email,
-            subject: "🚀 Complete seu cadastro no Chat SaaS",
+            subject: "🚀 Complete seu cadastro no Chatterfy",
             text: emailText,
             html: emailHtml,
           }).then((result) => {
