@@ -154,6 +154,30 @@ export function ChatProvider({ children }: ChatProviderProps) {
     setIsDraftMode(pathname === '/');
   }, [pathname]);
 
+  // BUGFIX: Restore current thread from URL on page refresh
+  useEffect(() => {
+    if (!isInitialized || threads.length === 0) return;
+    
+    // Extract thread ID from current path
+    const threadMatch = pathname.match(/^\/c\/(.+)$/);
+    if (threadMatch) {
+      const threadId = threadMatch[1];
+      const thread = threads.find(t => t.id === threadId);
+      
+      if (thread && (!currentThread || currentThread.id !== threadId)) {
+        console.log('🔄 [ChatContext] Restaurando thread da URL:', threadId);
+        setCurrentThread(thread);
+      } else if (!thread) {
+        console.log('⚠️ [ChatContext] Thread não encontrada na URL, redirecionando para home');
+        router.push('/');
+      }
+    } else if (pathname === '/' && currentThread) {
+      // If we're on homepage but have a current thread, clear it (draft mode)
+      console.log('🏠 [ChatContext] Entrando em modo draft, limpando thread atual');
+      setCurrentThread(null);
+    }
+  }, [pathname, threads, isInitialized, currentThread, router]);
+
   // Initialize on mount
   useEffect(() => {
     if (isInitialized || !anonymousSession.sessionId) return; // Wait for session to be ready
