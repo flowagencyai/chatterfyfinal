@@ -5,6 +5,7 @@ import { Message } from '../contexts/ChatContext';
 import styles from './MessageList.module.css';
 import ProviderIcon from './ProviderIcon';
 import ReasoningProgress from './ReasoningProgress';
+import MessageRenderer from './MessageRenderer';
 
 interface MessageListProps {
   messages: Message[];
@@ -118,11 +119,17 @@ export default function MessageList({ messages, isLoading, onRegenerateResponse,
               </div>
             )}
 
-            {/* Message Text */}
+            {/* Message Text - Renderização moderna com markdown */}
             <div className={styles.messageText}>
-              {message.content.split('\n').map((line, i) => (
-                <p key={i}>{line || '\u00A0'}</p>
-              ))}
+              {isUser ? (
+                // Usuário: texto simples formatado
+                message.content.split('\n').map((line, i) => (
+                  <p key={i}>{line || '\u00A0'}</p>
+                ))
+              ) : (
+                // Assistente: renderização completa com markdown e syntax highlighting
+                <MessageRenderer content={message.content} />
+              )}
             </div>
 
             {/* Action Buttons for Assistant Messages */}

@@ -88,3 +88,40 @@
     transform: scale(1);
   }
 }
+
+/* Botões de expansão/recolher */
+.expandButton,
+.collapseButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.expandButton:hover,
+.collapseButton:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.expandButton {
+  border: 1px dashed var(--border-secondary);
+}
+
+.collapseButton {
+  border: 1px solid var(--border-secondary);
+}
+
+.hiddenCount {
+  font-weight: 500;
+  color: var(--accent-primary);
+}
