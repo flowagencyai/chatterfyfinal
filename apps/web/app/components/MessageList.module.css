@@ -179,6 +179,43 @@
   background: var(--bg-message-assistant);
 }
 
+.messageActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  opacity: 1;
+  justify-content: flex-start;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0;
+}
+
+.actionButton:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.actionButton:active {
+  transform: scale(0.95);
+}
+
+.actionButton svg {
+  flex-shrink: 0;
+}
+
 .systemMessage {
   opacity: 0.8;
 }

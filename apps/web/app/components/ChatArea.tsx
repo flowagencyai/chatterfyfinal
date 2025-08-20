@@ -17,6 +17,7 @@ export default function ChatArea() {
     currentThread,
     addMessage,
     clearThread,
+    updateThread,
     isAnonymous,
     conversationCount,
     anonymousConversationLimit,
@@ -49,6 +50,7 @@ export default function ChatArea() {
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [input]);
+
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -256,6 +258,113 @@ export default function ChatArea() {
     setAttachments(prev => [...prev, ...files]);
   };
 
+
+  const handleRegenerateResponse = async (messageIndex: number) => {
+    if (!currentThread || isLoading || isProcessing) return;
+    
+    // Find the user message that triggered this assistant response
+    const userMessageIndex = messageIndex - 1;
+    if (userMessageIndex < 0 || !currentThread.messages[userMessageIndex]) return;
+    
+    const userMessage = currentThread.messages[userMessageIndex];
+    if (userMessage.role !== 'user') return;
+
+    // Remove the assistant message we want to regenerate
+    const updatedMessages = currentThread.messages.slice(0, messageIndex);
+    
+    // Update the thread to remove the assistant response
+    const updatedThread = {
+      ...currentThread,
+      messages: updatedMessages
+    };
+
+    // Remove the assistant message by clearing and re-adding messages up to that point
+    clearThread(currentThread.id);
+    
+    // Re-add all messages up to the user message
+    updatedMessages.forEach(msg => {
+      addMessage({
+        role: msg.role,
+        content: msg.content,
+        attachments: msg.attachments
+      });
+    });
+
+    // Trigger a new API call with the user's message
+    setIsProcessing(true);
+    setIsLoading(true);
+
+    try {
+      // Prepare messages for API call (up to the user message we want to regenerate from)
+      const apiMessages = updatedMessages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+      // Get authentication info and endpoint
+      let headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+
+      let endpoint = `${API_BASE}/v1/chat/completions`;
+      
+      const isAuthenticated = status === 'authenticated' && session?.user;
+      const shouldUseAnonymous = status === 'unauthenticated' || isAnonymous;
+      
+      if (shouldUseAnonymous) {
+        endpoint = `${API_BASE}/v1/anonymous/chat/completions`;
+      } else if (isAuthenticated) {
+        try {
+          const userInfo = await fetch('/api/user/session').then(r => r.json());
+          if (userInfo.user) {
+            headers['X-Org-Id'] = userInfo.user.orgId;
+            headers['X-User-Id'] = userInfo.user.id;
+          } else {
+            endpoint = `${API_BASE}/v1/anonymous/chat/completions`;
+          }
+        } catch (error) {
+          console.error('Failed to get user session:', error);
+          endpoint = `${API_BASE}/v1/anonymous/chat/completions`;
+        }
+      }
+
+      const requestBody = {
+        model: selectedModel.model,
+        messages: apiMessages,
+        stream: false,
+        provider: selectedModel.provider
+      };
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const assistantMessage = data.choices?.[0]?.message?.content || 'Desculpe, não consegui gerar uma nova resposta.';
+      
+      addMessage({
+        role: 'assistant',
+        content: assistantMessage
+      });
+      
+    } catch (error) {
+      console.error('Error regenerating response:', error);
+      addMessage({
+        role: 'assistant',
+        content: 'Desculpe, ocorreu um erro ao gerar uma nova resposta. Por favor, tente novamente.'
+      });
+    } finally {
+      setIsLoading(false);
+      setIsProcessing(false);
+    }
+  };
+
   const handleClearChat = () => {
     if (currentThread && window.confirm('Tem certeza que deseja limpar esta conversa?')) {
       clearThread(currentThread.id);
@@ -320,7 +429,8 @@ export default function ChatArea() {
             <MessageList 
               key={currentThread.id}
               messages={currentThread.messages || []} 
-              isLoading={isLoading} 
+              isLoading={isLoading}
+              onRegenerateResponse={handleRegenerateResponse}
             />
           )}
 
@@ -366,6 +476,7 @@ export default function ChatArea() {
                   />
                 </svg>
               </button>
+
 
               <textarea
                 ref={textareaRef}

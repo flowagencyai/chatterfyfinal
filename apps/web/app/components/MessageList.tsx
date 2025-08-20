@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Message } from '../contexts/ChatContext';
 import styles from './MessageList.module.css';
 
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
+  onRegenerateResponse?: (messageIndex: number) => void;
 }
 
-export default function MessageList({ messages, isLoading }: MessageListProps) {
+export default function MessageList({ messages, isLoading, onRegenerateResponse }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   
 
   useEffect(() => {
@@ -22,6 +24,22 @@ export default function MessageList({ messages, isLoading }: MessageListProps) {
       hour: '2-digit',
       minute: '2-digit'
     }).format(new Date(date));
+  };
+
+  const handleCopyMessage = async (content: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000); // Reset after 2 seconds
+    } catch (error) {
+      console.error('Failed to copy message:', error);
+    }
+  };
+
+  const handleRegenerateMessage = (index: number) => {
+    if (onRegenerateResponse) {
+      onRegenerateResponse(index);
+    }
   };
 
   const renderMessage = (message: Message, index: number) => {
@@ -94,6 +112,74 @@ export default function MessageList({ messages, isLoading }: MessageListProps) {
                 <p key={i}>{line || '\u00A0'}</p>
               ))}
             </div>
+
+            {/* Action Buttons for Assistant Messages */}
+            {!isUser && !isSystem && (
+              <div className={styles.messageActions}>
+                <button
+                  className={styles.actionButton}
+                  onClick={() => handleCopyMessage(message.content, message.id)}
+                  title="Copiar resposta"
+                  aria-label="Copiar resposta"
+                >
+                  {copiedMessageId === message.id ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M20 6L9 17L4 12"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        fill="none"
+                      />
+                      <path
+                        d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        fill="none"
+                      />
+                    </svg>
+                  )}
+                </button>
+
+                <button
+                  className={styles.actionButton}
+                  onClick={() => handleRegenerateMessage(index)}
+                  title="Gerar nova resposta"
+                  aria-label="Gerar nova resposta"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M1 4v6h6M23 20v-6h-6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
