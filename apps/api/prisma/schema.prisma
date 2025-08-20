@@ -38,10 +38,22 @@ model Organization {
   apiKey           String? @unique
   apiKeyCreatedAt  DateTime?
   
+  // Custom Limits (override plan defaults)
+  customMonthlyTokens    Int?      // Custom monthly token limit
+  customDailyTokens      Int?      // Custom daily token limit  
+  customStorageMB        Int?      // Custom storage limit in MB
+  customMaxFileSizeMB    Int?      // Custom max file size in MB
+  customLimitsUpdatedAt  DateTime? // When custom limits were last updated
+  customLimitsUpdatedBy  String?   // Admin user who updated limits
+  customLimitsReason     String?   // Reason for custom limits
+  
   users        User[]
   subscriptions Subscription[]
   threads      Thread[]
   files        FileAsset[]
+  alertRules   AlertRule[]
+  alerts       Alert[]
+  alertMetrics AlertMetric[]
 }
 
 model User {
@@ -196,4 +208,97 @@ model StripeWebhook {
   error           String?
   
   @@index([eventType, processed])
+}
+
+// Alert System Models
+model AlertRule {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  enabled         Boolean  @default(true)
+  
+  // Alert Type and Conditions
+  alertType       String   // 'USAGE', 'ERROR_RATE', 'FINANCIAL', 'SECURITY', 'SYSTEM_HEALTH'
+  metric          String   // 'tokens_used', 'error_rate', 'payment_failed', etc.
+  operator        String   // 'gt', 'lt', 'eq', 'gte', 'lte'
+  threshold       Float    // The value to compare against
+  timeWindow      Int      // Time window in minutes for evaluation
+  
+  // Notification Settings
+  notificationChannels String // JSON array: ['email', 'dashboard', 'webhook']
+  recipients      String?  // JSON array of email addresses or webhook URLs
+  
+  // Organization Scope (null = global)
+  orgId           String?  
+  org             Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  
+  // Rate Limiting
+  cooldownMinutes Int      @default(60)  // Minimum time between alerts
+  lastTriggered   DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt @default(now())
+  createdBy       String   // Admin user who created the rule
+  
+  alerts          Alert[]
+  
+  @@index([alertType, enabled])
+  @@index([orgId, enabled])
+}
+
+model Alert {
+  id              String   @id @default(cuid())
+  
+  // Alert Details
+  alertRuleId     String
+  alertRule       AlertRule @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
+  
+  title           String
+  message         String
+  severity        String   @default("MEDIUM") // 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
+  
+  // Context Data
+  orgId           String?
+  org             Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  metricValue     Float    // The actual value that triggered the alert
+  threshold       Float    // The threshold that was exceeded
+  
+  // Status and Resolution
+  status          String   @default("ACTIVE")  // 'ACTIVE', 'ACKNOWLEDGED', 'RESOLVED'
+  acknowledgedAt  DateTime?
+  acknowledgedBy  String?
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  resolution      String?
+  
+  // Notification Tracking
+  notificationsSent String? // JSON array of sent notifications
+  notificationErrors String? // JSON array of notification errors
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt @default(now())
+  
+  @@index([status, createdAt])
+  @@index([orgId, status])
+  @@index([alertRuleId, createdAt])
+}
+
+// Alert Metrics Cache (for performance)
+model AlertMetric {
+  id              String   @id @default(cuid())
+  
+  // Metric Identity
+  metricName      String   // 'daily_tokens', 'error_rate_5min', etc.
+  orgId           String?  // null for global metrics
+  org             Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  
+  // Metric Data
+  value           Float
+  timestamp       DateTime
+  metadata        String?  // JSON with additional context
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([metricName, orgId, timestamp])
+  @@index([timestamp]) // For cleanup of old metrics
 }

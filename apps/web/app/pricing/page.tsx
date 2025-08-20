@@ -160,6 +160,35 @@ export default function PricingPage() {
       }
     }
     
+    // Gerar features dinamicamente baseado nos dados reais do plano
+    const generateDynamicFeatures = () => {
+      const features = [
+        `${(plan.monthlyCreditsTokens / 1000000).toFixed(0)}M tokens por mês`,
+        `${plan.storageLimitMB >= 1000 ? (plan.storageLimitMB / 1000).toFixed(0) + 'GB' : plan.storageLimitMB + 'MB'} de armazenamento`,
+        `Upload até ${plan.maxFileSizeMB}MB por arquivo`
+      ];
+      
+      // Adicionar features baseadas no objeto features do plano
+      if (plan.features.rag) features.push('RAG (Retrieval Augmented Generation)');
+      if (plan.features.s3) features.push('Armazenamento na nuvem');
+      if (plan.features.customModels) features.push('Modelos customizados');
+      if (plan.features.prioritySupport) features.push('Suporte prioritário');
+      
+      // Features padrão baseadas no tipo de plano
+      if (isFree) {
+        features.push('5 mensagens anônimas');
+        features.push('Modelos básicos de IA');
+        features.push('Suporte por email');
+      } else {
+        features.push('Modelos premium');
+        features.push('Histórico completo');
+        features.push('API de integração');
+        if (!plan.features.prioritySupport) features.push('Suporte por email');
+      }
+      
+      return features;
+    };
+
     return {
       id: plan.code.toLowerCase(),
       name: plan.name,
@@ -168,21 +197,7 @@ export default function PricingPage() {
       description: isFree ? 
         'Perfeito para testar nossa plataforma' : 
         'Para profissionais e empresas',
-      features: isFree ? [
-        '2M tokens por mês',
-        '200MB de armazenamento',
-        '5 mensagens anônimas',
-        'Modelos básicos de IA',
-        'Suporte por email'
-      ] : [
-        '10M tokens por mês',  
-        '2GB de armazenamento',
-        'Todos os modelos premium',
-        'Upload de imagens e documentos',
-        'Histórico completo',
-        'API de integração',
-        'Suporte prioritário'
-      ],
+      features: generateDynamicFeatures(),
       cta: cta,
       ctaDisabled: ctaDisabled,
       ctaStyle: ctaStyle,

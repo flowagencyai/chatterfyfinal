@@ -25,6 +25,11 @@ import { routeRegenerateApiKey } from './routes/regenerateApiKey';
 import { adminDashboard } from './routes/adminDashboard';
 import { adminGetOrganizations, adminUpdateOrganization, adminDeleteOrganization } from './routes/adminOrganizations';
 import { adminStripeMetrics, adminSubscriptionActions } from './routes/adminStripeIntegration';
+import { adminGetPlans, adminCreatePlan, adminUpdatePlan, adminDeletePlan, adminSyncPlansWithStripe } from './routes/adminPlans';
+import { getCustomLimits, setCustomLimits, removeCustomLimits, listOrganizationsWithCustomLimits } from './routes/adminCustomLimits';
+import { adminGetAlertRules, adminCreateAlertRule, adminUpdateAlertRule, adminDeleteAlertRule, adminTestAlertRule } from './routes/adminAlertRules';
+import { adminGetAlerts, adminGetAlert, adminAcknowledgeAlert, adminResolveAlert, adminBulkAlertAction, adminGetAlertStats } from './routes/adminAlerts';
+import { alertEngine } from './util/alertEngine';
 import { adminAuth } from './middleware/adminAuth';
 import { planGuard } from './middleware/planGuard';
 import { planGuardWithAnonymous } from './middleware/planGuardWithAnonymous';
@@ -86,6 +91,45 @@ app.put('/admin/organizations/:orgId', adminAuth, adminUpdateOrganization);
 app.delete('/admin/organizations/:orgId', adminAuth, adminDeleteOrganization);
 app.get('/admin/stripe-metrics', adminAuth, adminStripeMetrics);
 app.post('/admin/subscription-actions', adminAuth, adminSubscriptionActions);
+
+// Admin Plans Management - protected with admin auth
+app.get('/admin/plans', adminAuth, adminGetPlans);
+app.post('/admin/plans', adminAuth, adminCreatePlan);
+app.put('/admin/plans/:planId', adminAuth, adminUpdatePlan);
+app.delete('/admin/plans/:planId', adminAuth, adminDeletePlan);
+app.get('/admin/plans/sync-stripe', adminAuth, adminSyncPlansWithStripe);
+
+// Admin Custom Limits Management - protected with admin auth
+app.get('/admin/organizations/:orgId/custom-limits', adminAuth, getCustomLimits);
+app.put('/admin/organizations/:orgId/custom-limits', adminAuth, setCustomLimits);
+app.delete('/admin/organizations/:orgId/custom-limits', adminAuth, removeCustomLimits);
+app.get('/admin/organizations/with-custom-limits', adminAuth, listOrganizationsWithCustomLimits);
+
+// Admin Alert Rules Management - protected with admin auth
+app.get('/admin/alert-rules', adminAuth, adminGetAlertRules);
+app.post('/admin/alert-rules', adminAuth, adminCreateAlertRule);
+app.put('/admin/alert-rules/:ruleId', adminAuth, adminUpdateAlertRule);
+app.delete('/admin/alert-rules/:ruleId', adminAuth, adminDeleteAlertRule);
+app.post('/admin/alert-rules/:ruleId/test', adminAuth, adminTestAlertRule);
+
+// Admin Alerts Management - protected with admin auth
+app.get('/admin/alerts', adminAuth, adminGetAlerts);
+app.get('/admin/alerts/stats', adminAuth, adminGetAlertStats);
+app.get('/admin/alerts/:alertId', adminAuth, adminGetAlert);
+app.put('/admin/alerts/:alertId/acknowledge', adminAuth, adminAcknowledgeAlert);
+app.put('/admin/alerts/:alertId/resolve', adminAuth, adminResolveAlert);
+app.post('/admin/alerts/bulk-action', adminAuth, adminBulkAlertAction);
+
+// Alert Engine Trigger (for manual testing and cron jobs)
+app.post('/admin/alerts/run-checks', adminAuth, async (req, res) => {
+  try {
+    await alertEngine.runAlertChecks();
+    res.json({ success: true, message: 'Alert checks completed successfully' });
+  } catch (error) {
+    console.error('Error running alert checks:', error);
+    res.status(500).json({ success: false, error: 'Failed to run alert checks' });
+  }
+});
 
 const port = Number(process.env.API_PORT || 8787);
 app.listen(port, () => {
