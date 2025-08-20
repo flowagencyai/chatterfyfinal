@@ -1,9 +1,11 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
+import { useAnonymousSession } from '../hooks/useAnonymousSession';
+import { useTabSync } from '../hooks/useTabSync';
 
 export interface Message {
   id: string;
@@ -84,7 +86,8 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const threadsRef = useRef<Thread[]>([]);
   const currentThreadRef = useRef<Thread | null>(null);
   
-  const [anonymousSessionId, setAnonymousSessionId] = useState<string>('');
+  // Use the new anonymous session hook for better persistence
+  const anonymousSession = useAnonymousSession();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isInitialized, setIsInitialized] = useState(false);
   
@@ -98,6 +101,27 @@ export function ChatProvider({ children }: ChatProviderProps) {
   }, [currentThread]);
   
   const isAnonymous = status === 'unauthenticated';
+  
+  // Setup tab synchronization for anonymous sessions
+  const handleThreadsUpdate = useCallback((newThreads: Thread[]) => {
+    if (isAnonymous) {
+      console.log('📡 [TabSync] Received threads update from another tab');
+      setThreads(newThreads);
+    }
+  }, [isAnonymous]);
+  
+  const handleConversationCountUpdate = useCallback((count: number) => {
+    if (isAnonymous) {
+      console.log('📡 [TabSync] Received conversation count update from another tab');
+      setConversationCount(count);
+    }
+  }, [isAnonymous]);
+  
+  const { broadcast } = useTabSync(
+    undefined, // We don't need session updates as the hook handles it
+    handleThreadsUpdate,
+    handleConversationCountUpdate
+  );
 
   // SECURITY FIX: Clear user data when authentication status changes
   const prevIsAnonymousRef = useRef<boolean | null>(null);
@@ -131,10 +155,21 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
   // Initialize on mount
   useEffect(() => {
-    if (isInitialized) return; // Prevent re-initialization
-    // Don't wait for session status - can cause resets
-    console.log('🟢 [ChatContext] Inicializando contexto...');
+    if (isInitialized || !anonymousSession.sessionId) return; // Wait for session to be ready
+    console.log('🟢 [ChatContext] Inicializando contexto com sessão:', anonymousSession.sessionId);
     
+    // Check if we already have data loaded for this session to avoid reset
+    const currentStorageKey = isAnonymous 
+      ? `${STORAGE_KEY_THREADS}_${anonymousSession.sessionId}`
+      : session?.user?.email 
+        ? `${STORAGE_KEY_THREADS}_${session.user.email}`
+        : null;
+        
+    if (currentStorageKey && threads.length > 0) {
+      console.log('🟢 [ChatContext] Dados já carregados para esta sessão, mantendo estado atual');
+      setIsInitialized(true);
+      return;
+    }
     
     // Load theme
     const savedTheme = localStorage.getItem(STORAGE_KEY_THEME) as 'light' | 'dark' | null;
@@ -149,25 +184,21 @@ export function ChatProvider({ children }: ChatProviderProps) {
       document.documentElement.setAttribute('data-theme', defaultTheme);
     }
 
-    // Load or create anonymous session - don't rely on volatile session status
+    // Load or create anonymous session - use the new hook
     const hasValidSession = session?.user?.email;
     if (!hasValidSession) {
-      let sessionId = localStorage.getItem(STORAGE_KEY_ANONYMOUS_ID);
-      if (!sessionId) {
-        sessionId = `anon_${uuidv4()}`;
-        localStorage.setItem(STORAGE_KEY_ANONYMOUS_ID, sessionId);
-      }
-      setAnonymousSessionId(sessionId);
-      
-      // Load anonymous conversation count
-      const count = parseInt(localStorage.getItem(STORAGE_KEY_ANONYMOUS_COUNT) || '0');
-      setConversationCount(count);
+      const sessionId = anonymousSession.sessionId;
       
       // Load anonymous threads
       const savedThreads = localStorage.getItem(`${STORAGE_KEY_THREADS}_${sessionId}`);
       if (savedThreads) {
         const parsed = JSON.parse(savedThreads);
         setThreads(parsed);
+        
+        // Count actual threads with messages (real conversations)
+        const actualConversations = parsed.filter((t: Thread) => t.messages && t.messages.length > 0).length;
+        console.log('🟢 [ChatContext] Conversações carregadas:', actualConversations);
+        setConversationCount(actualConversations);
         
         // Extract threadId from current URL path (/c/[threadId])
         const pathMatch = pathname.match(/^\/c\/(.+)$/);
@@ -183,6 +214,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
         // No existing threads, start in draft mode
         setThreads([]);
         setCurrentThread(null);
+        setConversationCount(0);
       }
     } else if (hasValidSession) {
       // Load user threads from localStorage (would be from API in production)
@@ -210,29 +242,47 @@ export function ChatProvider({ children }: ChatProviderProps) {
     
     setIsInitialized(true);
     console.log('🟢 [ChatContext] Contexto inicializado com sucesso!');
-  }, [isInitialized]); // BUGFIX: Removido status e outras deps que causam re-init
+  }, [isInitialized, anonymousSession.sessionId, session?.user?.email, pathname]); // Include necessary deps
 
   // Save threads when they change
   useEffect(() => {
     if (threads.length > 0) {
       const key = isAnonymous 
-        ? `${STORAGE_KEY_THREADS}_${anonymousSessionId}`
+        ? `${STORAGE_KEY_THREADS}_${anonymousSession.sessionId}`
         : session?.user?.email 
           ? `${STORAGE_KEY_THREADS}_${session.user.email}`
           : null;
       
       if (key) {
         localStorage.setItem(key, JSON.stringify(threads));
+        
+        // Broadcast to other tabs if anonymous
+        if (isAnonymous) {
+          broadcast('threads_update', threads);
+        }
       }
     }
-  }, [threads, isAnonymous, anonymousSessionId, session?.user?.email]); // More specific dependency
+  }, [threads, isAnonymous, anonymousSession.sessionId, session?.user?.email, broadcast]); // More specific dependency
 
-  // Save conversation count for anonymous users
+  // Update conversation count based on threads with messages
   useEffect(() => {
-    if (isAnonymous) {
-      localStorage.setItem(STORAGE_KEY_ANONYMOUS_COUNT, conversationCount.toString());
+    // Only update when we actually have threads AND the context is initialized
+    if (isAnonymous && threads.length > 0 && isInitialized) {
+      // Count only threads that have at least one message (real conversations)
+      const actualConversations = threads.filter(t => t.messages && t.messages.length > 0).length;
+      
+      // Only update if different from current count and the count is meaningful
+      if (actualConversations !== conversationCount && actualConversations > 0) {
+        console.log('📊 [ChatContext] Atualizando contagem de', conversationCount, 'para', actualConversations);
+        setConversationCount(actualConversations);
+        localStorage.setItem(STORAGE_KEY_ANONYMOUS_COUNT, actualConversations.toString());
+        
+        // Broadcast to other tabs
+        broadcast('conversation_count_update', actualConversations);
+        console.log('📊 [ChatContext] Contagem atualizada:', actualConversations);
+      }
     }
-  }, [conversationCount, isAnonymous]);
+  }, [threads, isAnonymous, broadcast, conversationCount, isInitialized]); // Add isInitialized dependency
 
   function createNewThread(title?: string, existingThreads?: Thread[]): Thread {
     // Use existing threads or current state
@@ -296,10 +346,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
     setThreads(prev => [newThread, ...prev]);
     setCurrentThread(newThread);
     
-    // Increment conversation count for anonymous users
-    if (isAnonymous) {
-      setConversationCount(prev => prev + 1);
-    }
+    // Conversation count will be updated automatically by the useEffect watching threads
     
     // BUGFIX: Defer navigation to avoid interfering with loading state during API calls
     setTimeout(() => {
@@ -387,11 +434,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
       
       console.log('🟡 [ChatContext] Thread setada como current');
       
-      // Increment conversation count for anonymous users
-      if (isAnonymous) {
-        setConversationCount(prev => prev + 1);
-        console.log('🟡 [ChatContext] Contador incrementado');
-      }
+      // Conversation count will be updated automatically by the useEffect watching threads
       
       // BUGFIX: Defer navigation to avoid interfering with loading state
       // Navigate to the new thread URL after a small delay to let API call complete
@@ -482,7 +525,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   function resetAnonymousSession() {
     localStorage.removeItem(STORAGE_KEY_ANONYMOUS_COUNT);
     localStorage.removeItem(STORAGE_KEY_ANONYMOUS_ID);
-    localStorage.removeItem(`${STORAGE_KEY_THREADS}_${anonymousSessionId}`);
+    localStorage.removeItem(`${STORAGE_KEY_THREADS}_${anonymousSession.sessionId}`);
     setConversationCount(0);
     setThreads([]);
     setCurrentThread(null);
@@ -490,12 +533,12 @@ export function ChatProvider({ children }: ChatProviderProps) {
     // Create new session
     const newSessionId = `anon_${uuidv4()}`;
     localStorage.setItem(STORAGE_KEY_ANONYMOUS_ID, newSessionId);
-    setAnonymousSessionId(newSessionId);
     
-    // Create initial thread
-    const initialThread = createNewThread('Nova conversa');
-    setThreads([initialThread]);
-    setCurrentThread(initialThread);
+    // Also clear the cookie to force a new session
+    document.cookie = 'anon_sid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    
+    // Reload the page to get a new session
+    window.location.reload();
   }
 
   // SECURITY FIX: Clear all user data on logout
