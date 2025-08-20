@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import styles from './ModelSelector.module.css';
+import ProviderIcon from './ProviderIcon';
 
 interface ModelInfo {
   provider: string;
@@ -104,6 +105,7 @@ export default function ModelSelector({ selectedModel, onModelChange }: ModelSel
         className={styles.trigger}
         aria-label="Selecionar modelo"
       >
+        <ProviderIcon provider={selectedModel.provider} size={20} className={styles.providerIcon} />
         <span className={styles.modelName}>{selectedModel.name}</span>
         <svg 
           width="16" 
@@ -152,9 +154,12 @@ export default function ModelSelector({ selectedModel, onModelChange }: ModelSel
                       : ''
                   }`}
                 >
-                  <div className={styles.modelInfo}>
-                    <div className={styles.modelTitle}>{model.name}</div>
-                    <div className={styles.modelDescription}>{model.description}</div>
+                  <div className={styles.modelInfoContainer}>
+                    <ProviderIcon provider={model.provider} size={24} className={styles.modelProviderIcon} />
+                    <div className={styles.modelInfo}>
+                      <div className={styles.modelTitle}>{model.name}</div>
+                      <div className={styles.modelDescription}>{model.description}</div>
+                    </div>
                   </div>
                   {selectedModel.model === model.model && selectedModel.provider === model.provider && (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

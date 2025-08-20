@@ -12,6 +12,7 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  reasoning?: string; // Para modelos de raciocínio (o1, etc)
   attachments?: Array<{
     id: string;
     filename: string;

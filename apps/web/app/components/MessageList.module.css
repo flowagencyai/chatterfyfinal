@@ -110,6 +110,7 @@
   background: var(--bg-tertiary);
   color: var(--accent-primary);
   border: 1px solid var(--border-primary);
+  overflow: hidden;
 }
 
 .messageBody {
@@ -272,4 +273,61 @@
 [data-theme="dark"] .userMessage .messageText {
   background: var(--bg-message-user);
   border: 1px solid var(--border-primary);
+}
+
+/* Reasoning Section Styles */
+.reasoningSection {
+  margin-bottom: 12px;
+}
+
+.reasoningDetails {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.reasoningSummary {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border: none;
+  outline: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.reasoningSummary:hover {
+  background: var(--bg-hover);
+}
+
+.reasoningSummary::marker {
+  display: none;
+}
+
+.reasoningSummary::-webkit-details-marker {
+  display: none;
+}
+
+.reasoningContent {
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  font-family: ui-monospace, 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Courier New', monospace;
+  background: var(--bg-primary);
+}
+
+.reasoningContent p {
+  margin: 0 0 6px 0;
+}
+
+.reasoningContent p:last-child {
+  margin-bottom: 0;
 }

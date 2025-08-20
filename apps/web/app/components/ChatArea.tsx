@@ -42,6 +42,21 @@ export default function ChatArea() {
     name: 'DeepSeek Chat'
   });
   
+  const [isHydrated, setIsHydrated] = useState(false);
+  
+  // Restaurar modelo do localStorage após hidratação
+  useEffect(() => {
+    const saved = localStorage.getItem('selectedModel');
+    if (saved) {
+      try {
+        const parsedModel = JSON.parse(saved);
+        setSelectedModel(parsedModel);
+      } catch (error) {
+        console.warn('Erro ao parsear modelo salvo:', error);
+      }
+    }
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     // Auto-resize textarea
@@ -50,6 +65,13 @@ export default function ChatArea() {
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [input]);
+
+  // Persistir modelo selecionado no localStorage (só após hidratação)
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem('selectedModel', JSON.stringify(selectedModel));
+    }
+  }, [selectedModel, isHydrated]);
 
 
   const handleSubmit = async (e: FormEvent) => {
@@ -211,11 +233,34 @@ export default function ChatArea() {
         // Non-streaming response
         const data = await response.json();
         
+        // Debug: Log da resposta completa
+        console.log('🔍 Resposta completa da API:', JSON.stringify(data, null, 2));
+        console.log('🧠 Reasoning encontrado:', data.choices?.[0]?.message?.reasoning);
+        
         const assistantMessage = data.choices?.[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta.';
+        
+        // Tentar diferentes campos para reasoning
+        let reasoning = data.choices?.[0]?.message?.reasoning || 
+                       data.choices?.[0]?.message?.reasoning_content ||
+                       data.choices?.[0]?.reasoning ||
+                       data.reasoning ||
+                       null;
+        
+        // Se há reasoning_tokens mas não há reasoning content, mostrar indicador
+        const hasReasoningTokens = data.usage?.completion_tokens_details?.reasoning_tokens > 0;
+        if (!reasoning && hasReasoningTokens) {
+          reasoning = `Este modelo utilizou ${data.usage.completion_tokens_details.reasoning_tokens} tokens para raciocínio interno antes de gerar esta resposta.\n\nO processo de raciocínio aconteceu nos bastidores para produzir uma resposta mais precisa e bem fundamentada.`;
+        }
+        
+        // Log para debug
+        console.log('📝 Mensagem:', assistantMessage);
+        console.log('🧠 Reasoning:', reasoning);
+        console.log('🔢 Reasoning tokens:', data.usage?.completion_tokens_details?.reasoning_tokens);
         
         addMessage({
           role: 'assistant',
-          content: assistantMessage
+          content: assistantMessage,
+          ...(reasoning && { reasoning })
         });
       }
     } catch (error) {
@@ -347,10 +392,12 @@ export default function ChatArea() {
 
       const data = await response.json();
       const assistantMessage = data.choices?.[0]?.message?.content || 'Desculpe, não consegui gerar uma nova resposta.';
+      const reasoning = data.choices?.[0]?.message?.reasoning || null;
       
       addMessage({
         role: 'assistant',
-        content: assistantMessage
+        content: assistantMessage,
+        ...(reasoning && { reasoning })
       });
       
     } catch (error) {
@@ -431,6 +478,8 @@ export default function ChatArea() {
               messages={currentThread.messages || []} 
               isLoading={isLoading}
               onRegenerateResponse={handleRegenerateResponse}
+              currentProvider={selectedModel.provider}
+              currentModel={selectedModel}
             />
           )}
 

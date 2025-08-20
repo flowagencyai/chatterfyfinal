@@ -3,14 +3,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { Message } from '../contexts/ChatContext';
 import styles from './MessageList.module.css';
+import ProviderIcon from './ProviderIcon';
+import ReasoningProgress from './ReasoningProgress';
 
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   onRegenerateResponse?: (messageIndex: number) => void;
+  currentProvider?: string;
+  currentModel?: { provider: string; model: string; name: string };
 }
 
-export default function MessageList({ messages, isLoading, onRegenerateResponse }: MessageListProps) {
+export default function MessageList({ messages, isLoading, onRegenerateResponse, currentProvider = 'deepseek', currentModel }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   
@@ -62,15 +66,7 @@ export default function MessageList({ messages, isLoading, onRegenerateResponse 
               </div>
             ) : (
               <div className={styles.assistantAvatar}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                  <path
-                    d="M12 1v6m0 6v6m11-7h-6m-6 0H1m16.36-9.36l-4.24 4.24M7.76 7.76L3.51 3.51m13.13 13.13l-4.24 4.24m-4.64-4.64l-4.25 4.25"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <ProviderIcon provider={currentProvider} size={20} />
               </div>
             )}
           </div>
@@ -103,6 +99,22 @@ export default function MessageList({ messages, isLoading, onRegenerateResponse 
                     <span>{attachment.filename}</span>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Reasoning (apenas para modelos de raciocínio) */}
+            {message.reasoning && !isUser && (
+              <div className={styles.reasoningSection}>
+                <details className={styles.reasoningDetails}>
+                  <summary className={styles.reasoningSummary}>
+                    <span>🧠 Processo de raciocínio</span>
+                  </summary>
+                  <div className={styles.reasoningContent}>
+                    {message.reasoning.split('\n').map((line, i) => (
+                      <p key={i}>{line || '\u00A0'}</p>
+                    ))}
+                  </div>
+                </details>
               </div>
             )}
 
@@ -232,21 +244,32 @@ export default function MessageList({ messages, isLoading, onRegenerateResponse 
             <div className={styles.messageContent}>
               <div className={styles.avatar}>
                 <div className={styles.assistantAvatar}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                    <path
-                      d="M12 1v6m0 6v6m11-7h-6m-6 0H1m16.36-9.36l-4.24 4.24M7.76 7.76L3.51 3.51m13.13 13.13l-4.24 4.24m-4.64-4.64l-4.25 4.25"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
+                  <ProviderIcon provider={currentProvider} size={20} />
                 </div>
               </div>
               <div className={styles.messageBody}>
                 <div className={styles.messageHeader}>
                   <span className={styles.authorName}>Assistente</span>
                 </div>
+                
+                {/* Reasoning em tempo real para modelos de raciocínio */}
+                {(currentModel?.name?.toLowerCase().includes('reason') || 
+                  currentModel?.model?.toLowerCase().includes('reason') ||
+                  currentModel?.model?.toLowerCase().includes('o1')) && (
+                  <div className={styles.reasoningSection}>
+                    <div className={styles.reasoningDetails} open>
+                      <div className={styles.reasoningSummary}>
+                        <span>🧠 Raciocinando...</span>
+                      </div>
+                      <div className={styles.reasoningContent}>
+                        <div className={styles.reasoningLive}>
+                          <ReasoningProgress />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className={styles.loadingMessage}>
                   <div className="loading-dots">
                     <span></span>
