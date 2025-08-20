@@ -52,6 +52,7 @@ model User {
   image     String?
   orgId     String
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  role      String   @default("USER") // USER, ADMIN
   createdAt DateTime @default(now())
   messages  Message[]
   accounts  Account[]

@@ -115,6 +115,7 @@ export async function routeGetUserProfile(req: Request, res: Response) {
         email: user.email,
         emailVerified: user.emailVerified,
         image: user.image,
+        role: user.role,
         createdAt: user.createdAt
       },
       organization: {

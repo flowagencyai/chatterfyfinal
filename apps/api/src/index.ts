@@ -22,6 +22,10 @@ import { routeStripeWebhook } from './routes/stripeWebhook';
 import { routeBillingPortal } from './routes/billingPortal';
 import { routeGenerateApiKey } from './routes/generateApiKey';
 import { routeRegenerateApiKey } from './routes/regenerateApiKey';
+import { adminDashboard } from './routes/adminDashboard';
+import { adminGetOrganizations, adminUpdateOrganization, adminDeleteOrganization } from './routes/adminOrganizations';
+import { adminStripeMetrics, adminSubscriptionActions } from './routes/adminStripeIntegration';
+import { adminAuth } from './middleware/adminAuth';
 import { planGuard } from './middleware/planGuard';
 import { planGuardWithAnonymous } from './middleware/planGuardWithAnonymous';
 
@@ -70,10 +74,18 @@ app.post('/v1/user/billing-portal', routeBillingPortal);
 app.post('/v1/user/generate-api-key', routeGenerateApiKey);
 app.post('/v1/user/regenerate-api-key', routeRegenerateApiKey);
 
-// Admin routes
+// Admin routes - basic (no auth required for testing)
 app.get('/admin/usage', routeAdminUsage);
 app.post('/admin/seed-plans', routeAdminSeedPlans);
 app.post('/admin/set-plan', routeAdminSetPlan);
+
+// Admin Dashboard routes - protected with admin auth
+app.get('/admin/dashboard', adminAuth, adminDashboard);
+app.get('/admin/organizations', adminAuth, adminGetOrganizations);
+app.put('/admin/organizations/:orgId', adminAuth, adminUpdateOrganization);
+app.delete('/admin/organizations/:orgId', adminAuth, adminDeleteOrganization);
+app.get('/admin/stripe-metrics', adminAuth, adminStripeMetrics);
+app.post('/admin/subscription-actions', adminAuth, adminSubscriptionActions);
 
 const port = Number(process.env.API_PORT || 8787);
 app.listen(port, () => {

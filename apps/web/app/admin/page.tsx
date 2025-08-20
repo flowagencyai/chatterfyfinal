@@ -1,48 +1,794 @@
 'use client';
+
 import { useEffect, useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useToastContext } from '../contexts/ToastContext';
+import EmptyState from './EmptyState';
+import styles from './admin-dashboard.module.css';
+import '../globals.css';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8787';
 
-export default function AdminUsage() {
-  const [org, setOrg] = useState('');
-  const [rows, setRows] = useState<any[]>([]);
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+interface DashboardData {
+  overview: {
+    totalUsers: number;
+    totalOrgs: number;
+    activeSubscriptions: number;
+    newUsersThisMonth: number;
+    newOrgsThisMonth: number;
+    userGrowthRate: number;
+    churnRate: number;
+  };
+  revenue: {
+    activeSubscriptions: number;
+    cancelledSubscriptions: number;
+    estimatedMRR: number;
+  };
+  usage: {
+    totalTokensThisMonth: number;
+    totalCostThisMonth: number;
+    apiCallsThisMonth: number;
+    apiCallsLastMonth: number;
+    callsGrowth: number;
+  };
+  distribution: {
+    planDistribution: Array<{ planId: string; count: number }>;
+    topOrgsByUsage: Array<{ orgId: string; totalTokens: number; apiCalls: number }>;
+  };
+  recent: {
+    users: Array<{
+      id: string;
+      name: string;
+      email: string;
+      createdAt: string;
+      organization: string;
+      plan: string;
+    }>;
+    usage: Array<{
+      id: string;
+      orgId: string;
+      orgName: string;
+      totalTokens: number;
+      costUsd: number;
+      createdAt: string;
+    }>;
+  };
+}
 
-  async function load() {
-    const qs = new URLSearchParams({ ...(org?{org}:{}), ...(from?{from}:{}), ...(to?{to}:{}) });
-    const r = await fetch(`${API_BASE}/admin/usage?` + qs.toString());
-    const data = await r.json();
-    setRows(data.data || []);
+interface StripeMetrics {
+  mrr: {
+    current: number;
+    projected_arr: number;
+  };
+  revenue: {
+    thisMonth: number;
+    lastMonth: number;
+    growthRate: number;
+  };
+  subscriptions: {
+    active: number;
+    newThisMonth: number;
+    cancelledThisMonth: number;
+    churnRate: number;
+  };
+  customers: {
+    total: number;
+    newThisMonth: number;
+  };
+  health: {
+    failedPayments: number;
+    disputes: number;
+    failureRate: number;
+  };
+  topCustomers: Array<{
+    customerId: string;
+    revenue: number;
+    email: string;
+    name: string;
+  }>;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  createdAt: string;
+  users: Array<{
+    id: string;
+    name: string;
+    email: string;
+    createdAt: string;
+  }>;
+  subscriptions: Array<{
+    id: string;
+    active: boolean;
+    plan: {
+      id: string;
+      code: string;
+      name: string;
+    };
+  }>;
+  _count: {
+    users: number;
+  };
+  usage: {
+    totalTokens: number;
+    totalCost: number;
+    apiCalls: number;
+  };
+}
+
+export default function UnifiedAdminDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [stripeMetrics, setStripeMetrics] = useState<StripeMetrics | null>(null);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [activeTab, setActiveTab] = useState<'executive' | 'revenue' | 'organizations' | 'analytics' | 'usage'>('executive');
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+  const [showOrgModal, setShowOrgModal] = useState(false);
+  
+  // Usage report states
+  const [usageOrg, setUsageOrg] = useState('');
+  const [usageRows, setUsageRows] = useState<any[]>([]);
+  const [usageFrom, setUsageFrom] = useState('');
+  const [usageTo, setUsageTo] = useState('');
+  
+  const { success, error } = useToastContext();
+
+  // Check admin status and redirect if not authorized
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth');
+      return;
+    }
+    if (status === 'authenticated') {
+      checkAdminStatus();
+    }
+  }, [status, router]);
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch('/api/user/profile');
+      if (response.ok) {
+        const userData = await response.json();
+        if (userData.user.role === 'ADMIN') {
+          setIsAdmin(true);
+          loadAllData();
+          const interval = setInterval(loadAllData, 5 * 60 * 1000);
+          return () => clearInterval(interval);
+        } else {
+          error('Acesso negado: Apenas administradores podem acessar esta página');
+          router.push('/');
+        }
+      } else {
+        error('Erro ao verificar permissões');
+        router.push('/auth');
+      }
+    } catch (err) {
+      error('Erro ao verificar permissões de administrador');
+      router.push('/auth');
+    }
+  };
+
+  const loadAllData = async () => {
+    try {
+      setLoading(true);
+      
+      // Adicionar headers de autenticação admin
+      const headers = {
+        'x-user-email': session?.user?.email || '',
+        'x-user-id': session?.user?.id || ''
+      };
+      
+      const [dashboardResponse, stripeResponse, orgsResponse] = await Promise.all([
+        fetch(`${API_BASE}/admin/dashboard`, { headers }),
+        fetch(`${API_BASE}/admin/stripe-metrics`, { headers }),
+        fetch(`${API_BASE}/admin/organizations?limit=50`, { headers })
+      ]);
+
+      if (dashboardResponse.ok) {
+        const result = await dashboardResponse.json();
+        setDashboardData(result.data);
+      }
+
+      if (stripeResponse.ok) {
+        const result = await stripeResponse.json();
+        setStripeMetrics(result.data);
+      }
+
+      if (orgsResponse.ok) {
+        const result = await orgsResponse.json();
+        setOrganizations(result.data.organizations || []);
+      }
+
+    } catch (err) {
+      error('Erro ao carregar dados do dashboard');
+      console.error('Dashboard error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUsageReport = async () => {
+    try {
+      const params = new URLSearchParams({ 
+        ...(usageOrg && { org: usageOrg }),
+        ...(usageFrom && { from: usageFrom }),
+        ...(usageTo && { to: usageTo })
+      });
+      
+      const response = await fetch(`${API_BASE}/admin/usage?${params}`);
+      const data = await response.json();
+      setUsageRows(data.data || []);
+    } catch (err) {
+      error('Erro ao carregar relatório de uso');
+    }
+  };
+
+  const handleDeleteOrganization = async (orgId: string) => {
+    if (!confirm('Tem certeza que deseja deletar esta organização?')) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/organizations/${orgId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        success('Organização deletada com sucesso');
+        loadAllData();
+        setShowOrgModal(false);
+      } else {
+        error('Erro ao deletar organização');
+      }
+    } catch (err) {
+      error('Erro ao deletar organização');
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const formatNumber = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
+  };
+
+  const getGrowthIcon = (rate: number) => {
+    if (rate > 0) return '📈';
+    if (rate < 0) return '📉';
+    return '➡️';
+  };
+
+  const getGrowthColor = (rate: number) => {
+    if (rate > 0) return '#22c55e';
+    if (rate < 0) return '#ef4444';
+    return '#6b7280';
+  };
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className={styles.adminApp}>
+        <div className={styles.loadingContainer}>
+          <div className="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <p>Verificando autenticação...</p>
+        </div>
+      </div>
+    );
   }
-  useEffect(()=>{ load(); }, []);
+
+  // Redirect if not authenticated  
+  if (status === 'unauthenticated') {
+    return null;
+  }
+
+  // Show admin loading
+  if (loading) {
+    return (
+      <div className={styles.adminApp}>
+        <div className={styles.loadingContainer}>
+          <div className="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <p>Carregando dashboard administrativo...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <main>
-      <h2>Relatório de Uso</h2>
-      <div style={{ display:'flex', gap:8, marginBottom: 12 }}>
-        <input placeholder="Org ID" value={org} onChange={e=>setOrg(e.target.value)} />
-        <input placeholder="from YYYY-MM-DD" value={from} onChange={e=>setFrom(e.target.value)} />
-        <input placeholder="to YYYY-MM-DD" value={to} onChange={e=>setTo(e.target.value)} />
-        <button onClick={load}>Buscar</button>
-      </div>
-      <table style={{ width:'100%', borderCollapse:'collapse' }}>
-        <thead>
-          <tr><th style={{textAlign:'left'}}>Dia</th><th>Org</th><th>Prompt</th><th>Completion</th><th>Total</th><th>Custo USD</th></tr>
-        </thead>
-        <tbody>
-          {rows.map((r,i)=>(
-            <tr key={i}>
-              <td>{new Date(r.day).toISOString().slice(0,10)}</td>
-              <td>{r.orgId}</td>
-              <td>{r.prompt_tokens}</td>
-              <td>{r.completion_tokens}</td>
-              <td>{r.total_tokens}</td>
-              <td>{Number(r.cost_usd).toFixed(6)}</td>
-            </tr>
+    <div className={styles.adminApp}>
+        {/* Header Executivo */}
+        <div className={styles.header}>
+          <div>
+            <h1>🏢 Chatterfy - Dashboard Proprietário</h1>
+            <p>Comando central executivo completo</p>
+          </div>
+          <div className={styles.headerActions}>
+            <button onClick={loadAllData} className={styles.refreshButton}>
+              🔄 Atualizar Dados
+            </button>
+            <div className={styles.lastUpdate}>
+              Última atualização: {dashboardData ? new Date().toLocaleString('pt-BR') : 'N/A'}
+            </div>
+            
+            {/* User Profile */}
+            {session?.user && (
+              <div className={styles.headerProfile}>
+                <div className={styles.profileAvatar}>
+                  {session.user.name?.[0] || session.user.email?.[0] || 'A'}
+                </div>
+                <div className={styles.profileInfo}>
+                  <div className={styles.profileName}>
+                    {session.user.name || session.user.email?.split('@')[0]}
+                  </div>
+                  <div className={styles.profileRole}>Administrador</div>
+                </div>
+              </div>
+            )}
+            
+            <button 
+              onClick={() => signOut({ callbackUrl: '/' })} 
+              className={styles.logoutButton}
+            >
+              🚪 Sair
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className={styles.tabs}>
+          {[
+            { id: 'executive', label: '📊 Executivo', icon: '📊' },
+            { id: 'revenue', label: '💰 Receita & Stripe', icon: '💰' },
+            { id: 'organizations', label: '🏢 Organizações', icon: '🏢' },
+            { id: 'analytics', label: '📈 Analytics', icon: '📈' },
+            { id: 'usage', label: '📋 Relatórios', icon: '📋' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
+              onClick={() => setActiveTab(tab.id as any)}
+            >
+              {tab.label}
+            </button>
           ))}
-        </tbody>
-      </table>
-    </main>
+        </div>
+
+        {/* Content Area */}
+        <div className={styles.content}>
+          {/* Executive Overview */}
+          {activeTab === 'executive' && (
+            <div className={styles.executive}>
+              {/* Check if we have any data */}
+              {(!dashboardData || 
+                (dashboardData.overview.totalUsers === 0 && 
+                 dashboardData.overview.totalOrgs === 0 && 
+                 dashboardData.usage.totalTokensThisMonth === 0)) ? (
+                <EmptyState 
+                  icon="🚀"
+                  title="Bem-vindo ao Chatterfy!"
+                  description="Seu dashboard está pronto e aguardando os primeiros dados. Assim que usuários começarem a usar a plataforma, você verá métricas detalhadas aqui."
+                  suggestion="Convide usuários para testar a plataforma e veja as métricas ganharem vida!"
+                />
+              ) : (
+                <>
+              {/* KPI Cards Row */}
+              <div className={styles.kpiGrid}>
+                <div className={styles.kpiCard}>
+                  <div className={styles.kpiHeader}>
+                    <h3>👥 Usuários Totais</h3>
+                    <span className={styles.kpiValue}>{formatNumber(dashboardData?.overview.totalUsers || 0)}</span>
+                  </div>
+                  <div className={styles.kpiFooter}>
+                    <span style={{ color: getGrowthColor(dashboardData?.overview.userGrowthRate || 0) }}>
+                      {getGrowthIcon(dashboardData?.overview.userGrowthRate || 0)} 
+                      {Math.abs(dashboardData?.overview.userGrowthRate || 0).toFixed(1)}% este mês
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.kpiCard}>
+                  <div className={styles.kpiHeader}>
+                    <h3>💰 MRR Real</h3>
+                    <span className={styles.kpiValue}>{formatCurrency(stripeMetrics?.mrr.current || 0)}</span>
+                  </div>
+                  <div className={styles.kpiFooter}>
+                    <span>ARR: {formatCurrency((stripeMetrics?.mrr.projected_arr || 0))}</span>
+                  </div>
+                </div>
+
+                <div className={styles.kpiCard}>
+                  <div className={styles.kpiHeader}>
+                    <h3>🏢 Organizações</h3>
+                    <span className={styles.kpiValue}>{formatNumber(dashboardData?.overview.totalOrgs || 0)}</span>
+                  </div>
+                  <div className={styles.kpiFooter}>
+                    <span>+{dashboardData?.overview.newOrgsThisMonth || 0} este mês</span>
+                  </div>
+                </div>
+
+                <div className={styles.kpiCard}>
+                  <div className={styles.kpiHeader}>
+                    <h3>📉 Churn Rate</h3>
+                    <span className={styles.kpiValue} style={{ color: '#ef4444' }}>
+                      {(stripeMetrics?.subscriptions.churnRate || dashboardData?.overview.churnRate || 0).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className={styles.kpiFooter}>
+                    <span>{stripeMetrics?.subscriptions.cancelledThisMonth || 0} cancelamentos</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Stats Grid */}
+              <div className={styles.quickStats}>
+                <div className={styles.statSection}>
+                  <h3>🔥 Uso da API (30 dias)</h3>
+                  <div className={styles.statGrid}>
+                    <div className={styles.statCard}>
+                      <div className={styles.statValue}>{formatNumber(dashboardData?.usage.totalTokensThisMonth || 0)}</div>
+                      <div className={styles.statLabel}>Tokens Consumidos</div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <div className={styles.statValue}>{formatNumber(dashboardData?.usage.apiCallsThisMonth || 0)}</div>
+                      <div className={styles.statLabel}>Chamadas API</div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <div className={styles.statValue}>${(dashboardData?.usage.totalCostThisMonth || 0).toFixed(2)}</div>
+                      <div className={styles.statLabel}>Custo Total</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.statSection}>
+                  <h3>💳 Saúde Financeira</h3>
+                  <div className={styles.healthIndicators}>
+                    <div className={styles.healthItem}>
+                      <span className={styles.healthLabel}>Taxa de Falha de Pagamentos:</span>
+                      <span className={`${styles.healthValue} ${(stripeMetrics?.health.failureRate || 0) > 5 ? styles.bad : styles.good}`}>
+                        {(stripeMetrics?.health.failureRate || 0).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className={styles.healthItem}>
+                      <span className={styles.healthLabel}>Disputas/Chargebacks:</span>
+                      <span className={styles.healthValue}>{stripeMetrics?.health.disputes || 0}</span>
+                    </div>
+                    <div className={styles.healthItem}>
+                      <span className={styles.healthLabel}>Crescimento Receita:</span>
+                      <span style={{ color: getGrowthColor(stripeMetrics?.revenue.growthRate || 0) }}>
+                        {getGrowthIcon(stripeMetrics?.revenue.growthRate || 0)} 
+                        {Math.abs(stripeMetrics?.revenue.growthRate || 0).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Revenue & Stripe */}
+          {activeTab === 'revenue' && (
+            <div className={styles.revenue}>
+              {!stripeMetrics || (stripeMetrics.mrr.current === 0 && stripeMetrics.topCustomers.length === 0) ? (
+                <EmptyState 
+                  icon="💰"
+                  title="Receita em Desenvolvimento"
+                  description="As métricas de receita aparecerão aqui quando as primeiras assinaturas forem ativadas no Stripe. O sistema já está integrado e pronto!"
+                  suggestion="Configure seus produtos no Stripe e faça as primeiras vendas para ver os dados financeiros."
+                />
+              ) : (
+                <>
+              <div className={styles.section}>
+                <h2>💰 Métricas de Receita Stripe</h2>
+                <div className={styles.kpiGrid}>
+                  <div className={styles.kpiCard}>
+                    <div className={styles.kpiHeader}>
+                      <h3>💰 MRR Atual</h3>
+                      <span className={styles.kpiValue}>{formatCurrency(stripeMetrics.mrr.current)}</span>
+                    </div>
+                    <div className={styles.kpiFooter}>
+                      <span>ARR Projetado: {formatCurrency(stripeMetrics.mrr.projected_arr)}</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.kpiCard}>
+                    <div className={styles.kpiHeader}>
+                      <h3>📊 Receita Este Mês</h3>
+                      <span className={styles.kpiValue}>{formatCurrency(stripeMetrics.revenue.thisMonth)}</span>
+                    </div>
+                    <div className={styles.kpiFooter}>
+                      <span style={{ color: getGrowthColor(stripeMetrics.revenue.growthRate) }}>
+                        {getGrowthIcon(stripeMetrics.revenue.growthRate)} 
+                        {Math.abs(stripeMetrics.revenue.growthRate).toFixed(1)}% vs mês anterior
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.section}>
+                <h2>🏆 Top Clientes por Receita</h2>
+                <div className={styles.table}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Ranking</th>
+                        <th>Cliente</th>
+                        <th>Email</th>
+                        <th>Receita (30 dias)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stripeMetrics.topCustomers.map((customer, index) => (
+                        <tr key={customer.customerId}>
+                          <td><span className={styles.rank}>#{index + 1}</span></td>
+                          <td>{customer.name || 'N/A'}</td>
+                          <td>{customer.email}</td>
+                          <td className={styles.revenue}>{formatCurrency(customer.revenue)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Organizations Management */}
+          {activeTab === 'organizations' && (
+            <div className={styles.organizations}>
+              <div className={styles.section}>
+                <h2>🏢 Todas as Organizações</h2>
+                <div className={styles.table}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Organização</th>
+                        <th>Plano</th>
+                        <th>Usuários</th>
+                        <th>Uso (30 dias)</th>
+                        <th>Custo</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {organizations.map((org) => (
+                        <tr key={org.id}>
+                          <td>
+                            <div className={styles.orgInfo}>
+                              <strong>{org.name}</strong>
+                              <small>{org.id}</small>
+                            </div>
+                          </td>
+                          <td>
+                            {org.subscriptions && org.subscriptions[0] ? (
+                              <span className={`${styles.planBadge} ${styles[org.subscriptions[0].plan.code.toLowerCase()]}`}>
+                                {org.subscriptions[0].plan.name}
+                              </span>
+                            ) : (
+                              <span className={`${styles.planBadge} ${styles.free}`}>FREE</span>
+                            )}
+                          </td>
+                          <td>
+                            <span className={styles.userCount}>{org._count.users}</span>
+                          </td>
+                          <td>
+                            <div className={styles.usageInfo}>
+                              <div>{formatNumber(org.usage.totalTokens)} tokens</div>
+                              <small>{formatNumber(org.usage.apiCalls)} chamadas</small>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={styles.cost}>{formatCurrency(org.usage.totalCost)}</span>
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => {
+                                setSelectedOrg(org);
+                                setShowOrgModal(true);
+                              }}
+                              className={styles.viewButton}
+                            >
+                              👁️ Ver
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Analytics */}
+          {activeTab === 'analytics' && (
+            <div className={styles.analytics}>
+              <div className={styles.section}>
+                <h2>🔥 Top Organizações por Uso</h2>
+                <div className={styles.table}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Ranking</th>
+                        <th>Organização</th>
+                        <th>Tokens Consumidos</th>
+                        <th>Chamadas API</th>
+                        <th>Média por Chamada</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dashboardData?.distribution.topOrgsByUsage.map((org, index) => (
+                        <tr key={org.orgId}>
+                          <td><span className={styles.rank}>#{index + 1}</span></td>
+                          <td><code>{org.orgId}</code></td>
+                          <td className={styles.tokens}>{formatNumber(org.totalTokens)}</td>
+                          <td>{formatNumber(org.apiCalls)}</td>
+                          <td>{org.apiCalls > 0 ? Math.round(org.totalTokens / org.apiCalls) : 0} tokens</td>
+                        </tr>
+                      )) || []}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className={styles.section}>
+                <h2>👥 Usuários Recentes</h2>
+                <div className={styles.table}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Organização</th>
+                        <th>Plano</th>
+                        <th>Cadastrado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dashboardData?.recent.users.map(user => (
+                        <tr key={user.id}>
+                          <td>{user.name}</td>
+                          <td>{user.email}</td>
+                          <td>{user.organization || 'N/A'}</td>
+                          <td>
+                            <span className={`${styles.planBadge} ${styles[user.plan.toLowerCase()]}`}>
+                              {user.plan}
+                            </span>
+                          </td>
+                          <td>{new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
+                        </tr>
+                      )) || []}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Usage Reports */}
+          {activeTab === 'usage' && (
+            <div className={styles.usage}>
+              <div className={styles.section}>
+                <h2>📋 Relatório Detalhado de Uso</h2>
+                <div className={styles.usageFilters}>
+                  <input 
+                    placeholder="Org ID" 
+                    value={usageOrg} 
+                    onChange={e => setUsageOrg(e.target.value)}
+                    className={styles.filterInput}
+                  />
+                  <input 
+                    placeholder="from YYYY-MM-DD" 
+                    value={usageFrom} 
+                    onChange={e => setUsageFrom(e.target.value)}
+                    className={styles.filterInput}
+                  />
+                  <input 
+                    placeholder="to YYYY-MM-DD" 
+                    value={usageTo} 
+                    onChange={e => setUsageTo(e.target.value)}
+                    className={styles.filterInput}
+                  />
+                  <button onClick={loadUsageReport} className={styles.filterButton}>
+                    🔍 Buscar
+                  </button>
+                </div>
+                
+                <div className={styles.table}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Dia</th>
+                        <th>Organização</th>
+                        <th>Prompt Tokens</th>
+                        <th>Completion Tokens</th>
+                        <th>Total Tokens</th>
+                        <th>Custo (USD)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usageRows.map((row, i) => (
+                        <tr key={i}>
+                          <td>{new Date(row.day).toLocaleDateString('pt-BR')}</td>
+                          <td><code>{row.orgId}</code></td>
+                          <td>{formatNumber(row.prompt_tokens)}</td>
+                          <td>{formatNumber(row.completion_tokens)}</td>
+                          <td>{formatNumber(row.total_tokens)}</td>
+                          <td>${Number(row.cost_usd).toFixed(6)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Organization Detail Modal */}
+        {showOrgModal && selectedOrg && (
+          <div className={styles.modalOverlay} onClick={() => setShowOrgModal(false)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h2>📋 {selectedOrg.name}</h2>
+                <button onClick={() => setShowOrgModal(false)} className={styles.closeButton}>✕</button>
+              </div>
+              <div className={styles.modalContent}>
+                <div className={styles.orgDetails}>
+                  <p><strong>ID:</strong> <code>{selectedOrg.id}</code></p>
+                  <p><strong>Usuários:</strong> {selectedOrg._count.users}</p>
+                  <p><strong>Criado:</strong> {new Date(selectedOrg.createdAt).toLocaleDateString('pt-BR')}</p>
+                </div>
+                
+                <div className={styles.usageStats}>
+                  <h3>📊 Estatísticas (30 dias)</h3>
+                  <div className={styles.statsGrid}>
+                    <div className={styles.statCard}>
+                      <div className={styles.statValue}>{formatNumber(selectedOrg.usage.totalTokens)}</div>
+                      <div className={styles.statLabel}>Tokens</div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <div className={styles.statValue}>{formatNumber(selectedOrg.usage.apiCalls)}</div>
+                      <div className={styles.statLabel}>API Calls</div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <div className={styles.statValue}>{formatCurrency(selectedOrg.usage.totalCost)}</div>
+                      <div className={styles.statLabel}>Custo</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.dangerZone}>
+                  <h3>⚠️ Zona de Perigo</h3>
+                  <button
+                    onClick={() => handleDeleteOrganization(selectedOrg.id)}
+                    className={styles.dangerButton}
+                  >
+                    🗑️ Deletar Organização
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+    </div>
   );
 }
