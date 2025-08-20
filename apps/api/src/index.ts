@@ -33,6 +33,7 @@ import { alertEngine } from './util/alertEngine';
 import { adminAuth } from './middleware/adminAuth';
 import { planGuard } from './middleware/planGuard';
 import { planGuardWithAnonymous } from './middleware/planGuardWithAnonymous';
+import { routeModels } from './routes/models';
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
@@ -61,6 +62,9 @@ app.use(orgUserRateLimit);
 // Authenticated routes with plan protection (including anonymous support)
 app.post('/v1/chat/completions', planGuardWithAnonymous, routeChatCompletions);
 app.post('/v1/embeddings', planGuard, routeEmbeddings);
+
+// Models endpoint (no auth required, cached)
+app.get('/v1/models', routeModels);
 
 // Plan management routes
 app.get('/v1/plans', routeGetPlans);

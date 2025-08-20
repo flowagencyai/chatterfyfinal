@@ -125,6 +125,50 @@
   color: var(--accent-secondary);
 }
 
+/* Loading and error states */
+.loadingState {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-light);
+  border-top: 2px solid var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.errorState span {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.errorState small {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .dropdown {

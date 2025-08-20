@@ -1,9 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './ModelSelector.module.css';
 
-const MODELS = [
+interface ModelInfo {
+  provider: string;
+  model: string;
+  name: string;
+  description: string;
+}
+
+// Fallback models se a API falhar
+const FALLBACK_MODELS: ModelInfo[] = [
   {
     provider: 'deepseek',
     model: 'deepseek-chat',
@@ -37,8 +45,50 @@ interface ModelSelectorProps {
 
 export default function ModelSelector({ selectedModel, onModelChange }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [models, setModels] = useState<ModelInfo[]>(FALLBACK_MODELS);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleModelSelect = (model: typeof MODELS[0]) => {
+  useEffect(() => {
+    async function fetchModels() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8787';
+        const response = await fetch(`${apiBase}/v1/models`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.models && Array.isArray(data.models) && data.models.length > 0) {
+          setModels(data.models);
+          console.log(`✅ Modelos carregados: ${data.models.length} de ${Object.keys(data.providers || {}).length} providers`);
+        } else {
+          console.warn('⚠️ Nenhum modelo retornado da API, usando fallback');
+          setModels(FALLBACK_MODELS);
+        }
+      } catch (err) {
+        console.error('❌ Erro ao carregar modelos:', err);
+        setError(err instanceof Error ? err.message : 'Erro desconhecido');
+        setModels(FALLBACK_MODELS);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchModels();
+  }, []);
+
+  const handleModelSelect = (model: ModelInfo) => {
     onModelChange({
       provider: model.provider,
       model: model.model,
@@ -80,7 +130,19 @@ export default function ModelSelector({ selectedModel, onModelChange }: ModelSel
               <h3>Selecione o modelo</h3>
             </div>
             <div className={styles.modelList}>
-              {MODELS.map((model) => (
+              {isLoading ? (
+                <div className={styles.loadingState}>
+                  <div className={styles.spinner} />
+                  <span>Carregando modelos...</span>
+                </div>
+              ) : error ? (
+                <div className={styles.errorState}>
+                  <span>⚠️ Erro ao carregar modelos</span>
+                  <small>{error}</small>
+                  <small>Usando modelos padrão</small>
+                </div>
+              ) : null}
+              {models.map((model) => (
                 <button
                   key={`${model.provider}-${model.model}`}
                   onClick={() => handleModelSelect(model)}

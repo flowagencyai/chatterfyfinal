@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { generateWithProvider } from '@core/generate';
-import { openaiAdapter } from '@core/adapters/openai';
 import { deepseekAdapter } from '@core/adapters/deepseek';
 import prisma from '../db/prisma';
 import { recordUsage } from '../util/metering';
@@ -18,7 +17,7 @@ const schema = z.object({
     role: z.enum(['system','user','assistant','tool']).default('user'),
     content: z.union([z.string(), z.array(ContentPart)])
   })),
-  provider: z.enum(['openai','anthropic','google','ollama','deepseek']).default('openai'),
+  provider: z.enum(['deepseek']).default('deepseek'),
   temperature: z.number().min(0).max(2).optional(),
   max_tokens: z.number().optional(),
   stream: z.boolean().optional(),
@@ -60,8 +59,8 @@ export async function routeChatCompletions(req: Request, res: Response) {
     expandedMessages.push({ role: m.role, content });
   }
 
-  // Streaming para OpenAI e DeepSeek
-  if (body.stream && (body.provider === 'openai' || body.provider === 'deepseek')) {
+  // Streaming para DeepSeek
+  if (body.stream && body.provider === 'deepseek') {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
@@ -75,9 +74,8 @@ export async function routeChatCompletions(req: Request, res: Response) {
     }, 15000);
     let promptTokens: number|undefined; let completionTokens: number|undefined; let totalTokens: number|undefined;
     try {
-      // Escolher o adapter correto baseado no provider
-      const adapter = body.provider === 'openai' ? openaiAdapter : deepseekAdapter;
-      await adapter.stream({ ...body, messages: expandedMessages }, (delta, usage) => {
+      // Usar apenas o adapter do DeepSeek
+      await deepseekAdapter.stream({ ...body, messages: expandedMessages }, (delta, usage) => {
         if (closed) return;
         if (delta) {
           res.write(`event: token\n`);

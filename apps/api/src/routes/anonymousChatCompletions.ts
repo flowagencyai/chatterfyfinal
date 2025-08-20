@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { generateWithProvider } from '../../../../packages/core/src/generate.js';
-import { openaiAdapter } from '@core/adapters/openai';
 import { deepseekAdapter } from '@core/adapters/deepseek';
 
 /**
@@ -33,7 +32,7 @@ export async function routeAnonymousChatCompletions(req: Request, res: Response)
       max_tokens: Math.min(max_tokens || 500, 500) // Limit tokens for anonymous
     };
 
-    if (stream && (provider === 'openai' || provider === 'deepseek')) {
+    if (stream && provider === 'deepseek') {
       // Handle streaming response with real streaming
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -50,9 +49,8 @@ export async function routeAnonymousChatCompletions(req: Request, res: Response)
       }, 15000);
       
       try {
-        // Choose the correct adapter
-        const adapter = provider === 'openai' ? openaiAdapter : deepseekAdapter;
-        await adapter.stream(generateRequest, (delta, usage) => {
+        // Usar apenas o adapter do DeepSeek
+        await deepseekAdapter.stream(generateRequest, (delta, usage) => {
           if (closed) return;
           if (delta) {
             res.write(`event: token\n`);
