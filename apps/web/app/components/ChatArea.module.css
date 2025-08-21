@@ -265,3 +265,15 @@
   border-color: var(--border-secondary);
   transform: translateY(-1px);
 }
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .chatArea {
+    margin-left: 0;
+    width: 100%;
+    z-index: 10;
+  }
+  
+  .inputContainer {
+    padding: 16px;
+  }
+}
