@@ -174,3 +174,17 @@ textarea:focus-visible {
 .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
 .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
 .loading-dots span:nth-child(3) { animation-delay: 0; }
+
+/* App Layout */
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Mobile Responsive Layout */
+@media (max-width: 768px) {
+  .app {
+    position: relative;
+  }
+}
