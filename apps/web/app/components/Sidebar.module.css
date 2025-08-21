@@ -405,3 +405,19 @@
     transform: translateY(-50%);
   }
 }
+/* Mobile Overlay Fix */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .sidebar.closed {
+    transform: translateX(-280px);
+  }
+  
+  .toggleButton {
+    z-index: 1002;
+  }
+}
